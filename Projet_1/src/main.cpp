@@ -1,4 +1,5 @@
 #include <iostream>
+#include <ostream>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
@@ -61,16 +62,43 @@ namespace ExceptionHandler{
     };
 }
 
+void display_warning(string &&warning_message){
+    //cette fonction existe car elle pourra (voire devra) être étendue,
+    //pour tous les warnings qu'on pourrait afficher (on pourrait même créer une classe juste pour ça)
+    cout << "WARNING : " << warning_message << endl;
+}
+
 
 int main(int argc, char* argv[]) {
     if (argc < 3){
         ExceptionHandler::display_error_and_exit(ExceptionHandler::LACKING_USERNAME);
     }
+
+    //il est probable qu'on devra regrouper les argv dans une ou plusieurs classe(s), genre 'ChatHandler'.
+    //On peut aussi penser à d'autres classes/méthodes spécifiques à chaque message, genre 'display(bool is_formatted=true/false)'
     ExceptionHandler::check_username_validity(argv[1]);
     ExceptionHandler::check_username_validity(argv[2]);
+    string user1_name = argv[1];
+    string user2_name = argv[2];
+    bool bot_arg_written = false;
+    bool manual_arg_written = false;
     //...
-    //À GÉRER : les autres args
 
+    if (argc > 5){
+        display_warning("Trop d'arguments passés (plus de 4)");
+    }
+
+    for (int i = 3; i < argc; i++){
+        string arg = argv[i];
+        if (arg == "bot" || arg == "manual"){
+            if ((bot_arg_written && arg == "bot") || (manual_arg_written && arg == "manual")){
+                display_warning("Un même argument a été écrit deux fois (" + arg + ")");
+            }
+            else {
+                arg == "bot" ? bot_arg_written = true : manual_arg_written = true;
+            }
+        }
+    }
 
    return 0;
 }
