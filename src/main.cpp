@@ -14,15 +14,21 @@ namespace ExceptionHandler{
         LACKING_USERNAME = 1,
         USERNAME_TOO_LONG = 2,
         INVALID_CHAR_IN_USERNAME = 3,
-        RESERVED_EXPRESSION_USERNAME = 4 //Si l'utilisateur s'appelle '.', '..', etc.
+        /*
+            ↓↓↓ Est correct selon les consignes???
+        */
+        //RESERVED_EXPRESSION_USERNAME = 4 //Si l'utilisateur s'appelle '.', '..', etc.
     };
+
+    string error_color = "\x1B[31m";
+    string end_color = "\x1B[0m";
 
     //On va probablement devoir raffiner ces exceptions, en disant par exemple lequel des deux usernames présentés est fautif.
     const unordered_map<ExceptionHandler::ExitCodes, string> EXIT_CODE_MESSAGES = {
-        {LACKING_USERNAME, "chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"},
-        {USERNAME_TOO_LONG, "Un nom d'utilisateur est trop long (> 30 )"},
-        {INVALID_CHAR_IN_USERNAME, "Un nom d'utilisateur ne peut contenir un caractère interdit ('[', ']', '-', '/')"},
-        {RESERVED_EXPRESSION_USERNAME, "Un nom d'utilisateur ne peut être un mot réservé (comme '.' ou '..')"}
+        {LACKING_USERNAME, error_color+"chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"+end_color},
+        {USERNAME_TOO_LONG, error_color+"Un nom d'utilisateur est trop long (> 30 )"+end_color},
+        {INVALID_CHAR_IN_USERNAME, error_color+"Un nom d'utilisateur ne peut contenir un caractère interdit ('[', ']', '-', '/') or étre ('.', '..')"+end_color},
+        //{RESERVED_EXPRESSION_USERNAME, error_color+"Un nom d'utilisateur ne peut être un mot réservé (comme '.' ou '..')"+end_color}
         //etc...
     };
 
@@ -30,12 +36,15 @@ namespace ExceptionHandler{
     //en classe pour permettre de poser cette méthode comme private. Mais ceci est encore à discuter.
      void display_error_and_exit(const ExceptionHandler::ExitCodes &exit_code){ //devrait prendre args en paramètre pour les pseudos avec caractères invalides
         auto it = EXIT_CODE_MESSAGES.find(exit_code);
-        if(it != EXIT_CODE_MESSAGES.end()){
-            cerr << "Erreur inconnue, code " << exit_code << endl;
-        }
-        else{
-            cerr << it->second << endl;
-        }
+
+        /*
+        TODO it != EXIT_CODE_MESSAGES.end() is not correct
+        */
+
+        // if(it != EXIT_CODE_MESSAGES.end()){
+        //     cerr << "Erreur inconnue, code " << exit_code << endl;
+        // }
+        cerr << it->second << endl;
         exit(exit_code);
     };
     void check_username_validity(const string &username){
@@ -56,7 +65,7 @@ namespace ExceptionHandler{
         }
         for (string name: invalid_names){
             if(name == username){
-                display_error_and_exit(RESERVED_EXPRESSION_USERNAME);
+                display_error_and_exit(INVALID_CHAR_IN_USERNAME);
             }
         }
     };
@@ -90,12 +99,12 @@ int main(int argc, char* argv[]) {
 
     for (int i = 3; i < argc; i++){
         string arg = argv[i];
-        if (arg == "bot" || arg == "manual"){
-            if ((bot_arg_written && arg == "bot") || (manual_arg_written && arg == "manual")){
+        if (arg == "--bot" || arg == "--manuel"){
+            if ((bot_arg_written && arg == "--bot") || (manual_arg_written && arg == "--manuel")){
                 display_warning("Un même argument a été écrit deux fois (" + arg + ")");
             }
             else {
-                arg == "bot" ? bot_arg_written = true : manual_arg_written = true;
+                arg == "--bot" ? bot_arg_written = true : manual_arg_written = true;
             }
         }
     }
