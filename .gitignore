@@ -32,3 +32,5 @@
 *.app
 
 chat
+test
+test.cpp

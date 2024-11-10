@@ -1,8 +1,14 @@
+#include <cstdio>
 #include <iostream>
 #include <ostream>
 #include <string>
+#include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
+
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using std::cout, std::string, std::cerr, std::unordered_map, std::endl, std::unordered_set;
 //TODO : à voir si on met le namespace dans un hpp, et si on rajoute des fichiers. Il faudra relire les consignes à ce sujet.
@@ -25,7 +31,7 @@ namespace ExceptionHandler{
 
     //On va probablement devoir raffiner ces exceptions, en disant par exemple lequel des deux usernames présentés est fautif.
     const unordered_map<ExceptionHandler::ExitCodes, string> EXIT_CODE_MESSAGES = {
-        {LACKING_USERNAME, error_color+"chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"+end_color},
+        {LACKING_USERNAME, "chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"},
         {USERNAME_TOO_LONG, error_color+"Un nom d'utilisateur est trop long (> 30 )"+end_color},
         {INVALID_CHAR_IN_USERNAME, error_color+"Un nom d'utilisateur ne peut contenir un caractère interdit ('[', ']', '-', '/') or étre ('.', '..')"+end_color},
         //{RESERVED_EXPRESSION_USERNAME, error_color+"Un nom d'utilisateur ne peut être un mot réservé (comme '.' ou '..')"+end_color}
@@ -34,7 +40,7 @@ namespace ExceptionHandler{
 
     //cette fonction n'étant pour l'instant pas encore utilisée hors de ce namespace, on pourrait penser à adapter le namespace
     //en classe pour permettre de poser cette méthode comme private. Mais ceci est encore à discuter.
-     void display_error_and_exit(const ExceptionHandler::ExitCodes &exit_code){ //devrait prendre args en paramètre pour les pseudos avec caractères invalides
+    void display_error_and_exit(const ExceptionHandler::ExitCodes &exit_code){ //devrait prendre args en paramètre pour les pseudos avec caractères invalides
         auto it = EXIT_CODE_MESSAGES.find(exit_code);
 
         /*
@@ -47,6 +53,7 @@ namespace ExceptionHandler{
         cerr << it->second << endl;
         exit(exit_code);
     };
+
     void check_username_validity(const string &username){
         //les 3 trucs en-dessous sont peut-être à redéfinir comme des constantes globales ?
         const unordered_set<char> invalid_chars = {'[', ']', '-', '/'};
@@ -109,5 +116,12 @@ int main(int argc, char* argv[]) {
         }
     }
 
-   return 0;
+    // Temp folder
+    DIR * temp = opendir("./temp");
+    if (temp){closedir(temp);}
+    else{mkdir("./temp", 0666);} // Create temp folder for FIFO
+
+    // Named Pipes (FIFO)
+
+    return 0;
 }
