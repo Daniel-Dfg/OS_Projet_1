@@ -87,7 +87,7 @@ void display_warning(string &&warning_message){
     cout << "WARNING : " << warning_message << endl;
 }
 
-void stupid_error_check(int error){
+void stupid_error_check(int error){ // TODO a changé
     // Error si "error" est -1
     if (error < 0){
         std::cout << "error\n";
@@ -95,7 +95,7 @@ void stupid_error_check(int error){
     }
 }
 
-void signal_handler(int sig){
+void signal_handler(int sig){ // TODO a changé
     exit(0);
 }
 
@@ -159,9 +159,9 @@ int main(int argc, char* argv[]) {
 
     // Communication avec deux processus (Original: Send message, Secondaire: read message)
     // Faut avoir 2 terminal (terminal1:./chat A B, terminal2:./chat B A)
-
     if (process > 0){//Processus original
         signal(SIGINT, signal_handler); //TODO signal pour toutes les situation
+
         char message_to_send[80];
         while (1) {
             fd1 = open(path_1.c_str(), O_WRONLY);
@@ -171,11 +171,22 @@ int main(int argc, char* argv[]) {
         }
     }
     else {// processus secondaire
+
+        // ANSI
+        string ansi_begining = "\x1B[4m";
+        string ansi_end = "\x1B[0m";
+
+        // Désactivé ANSI
+        if(bot_arg_written){
+            ansi_begining = "";
+            ansi_end = "";
+        }
+
         char recived_message[80];
         while (1) {
             fd2 = open(path_2.c_str(), O_RDONLY);
             read(fd2, recived_message, sizeof(recived_message));
-            printf("[\x1B[4m%s\x1B[0m] %s", user2_name.c_str(), recived_message);
+            printf("[%s%s%s] %s",ansi_begining.c_str(), user2_name.c_str(), ansi_end.c_str(), recived_message);
             close(fd2);
         }
     }
