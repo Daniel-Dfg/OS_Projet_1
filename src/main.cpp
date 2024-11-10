@@ -152,6 +152,7 @@ int main(int argc, char* argv[]) {
     int process = fork();
 
     // Communication avec deux processus (Original: Send message, Secondaire: read message)
+    // Faut avoir 2 terminal (terminal1:./chat A B, terminal2:./chat B A)
     if (process > 0){
         //Processus original
         char message_to_send[80];
