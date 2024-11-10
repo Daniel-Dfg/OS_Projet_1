@@ -1,11 +1,11 @@
-#include <cstdio>
+//C++
 #include <iostream>
-#include <ostream>
-#include <string>
-#include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
 
+//C
+#include <fcntl.h>
+#include <unistd.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -91,7 +91,6 @@ void stupid_error_check(int error){
         exit(1);
     }
 }
-
 int main(int argc, char* argv[]) {
     if (argc < 3){
         ExceptionHandler::display_error_and_exit(ExceptionHandler::LACKING_USERNAME);
@@ -123,20 +122,29 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    //les constants
+    const mode_t FIFO_PREMISSION = 0666;
+    const mode_t FOLDER_PREMISSON = 0777;
+
+
     // Dossier temp
     DIR * temp = opendir("temp");
     if (temp){stupid_error_check(closedir(temp));}
-    else{stupid_error_check(mkdir("temp", 0777));} // création du dossier temp
+    else{stupid_error_check(mkdir("temp", FOLDER_PREMISSON));} // création du dossier temp
 
     // Initialisé les path FIFO
     string path_1 = "temp/" + user1_name +"_"+ user2_name +".chat";
-    const char * path_1o  =path_1.c_str();
     string path_2 = "temp/" + user2_name + "_" + user1_name + ".chat";
-    const char * path_2o = path_2.c_str();
+
+    //Initialisé file discriptor
+    int fd1 = open(path_1.c_str(), O_PATH);
+    int fd2 = open(path_2.c_str(), O_PATH);
 
     // Création Named Pipes (FIFO)
-    stupid_error_check(mkfifo(path_1o, 0666));
-    stupid_error_check(mkfifo(path_2o, 0666));
+    if (fd1 < 0){stupid_error_check(mkfifo(path_1.c_str(), FIFO_PREMISSION));}
+    if (fd2 < 0){stupid_error_check(mkfifo(path_2.c_str(), FIFO_PREMISSION));}
+    close(fd1);
+    close(fd2);
 
 
     return 0;

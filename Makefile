@@ -31,4 +31,4 @@ $(OBJDIR)%$(OFILES): $(SRCDIR)%$(SFILES)
 	$(CC) $(CFLAGS) $< -c -o $@
 
 clean:
-	@rm -f $(OBJECTS) $(EXE) $(TEMP)
+	@rm -rf $(OBJECTS) $(EXE) $(TEMP)
