@@ -84,6 +84,13 @@ void display_warning(string &&warning_message){
     cout << "WARNING : " << warning_message << endl;
 }
 
+void stupid_error_check(int error){
+    // Error si "error" est -1
+    if (error < 0){
+        std::cout << "error\n";
+        exit(1);
+    }
+}
 
 int main(int argc, char* argv[]) {
     if (argc < 3){
@@ -116,12 +123,21 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Temp folder
-    DIR * temp = opendir("./temp");
-    if (temp){closedir(temp);}
-    else{mkdir("./temp", 0666);} // Create temp folder for FIFO
+    // Dossier temp
+    DIR * temp = opendir("temp");
+    if (temp){stupid_error_check(closedir(temp));}
+    else{stupid_error_check(mkdir("temp", 0777));} // création du dossier temp
 
-    // Named Pipes (FIFO)
+    // Initialisé les path FIFO
+    string path_1 = "temp/" + user1_name +"_"+ user2_name +".chat";
+    const char * path_1o  =path_1.c_str();
+    string path_2 = "temp/" + user2_name + "_" + user1_name + ".chat";
+    const char * path_2o = path_2.c_str();
+
+    // Création Named Pipes (FIFO)
+    stupid_error_check(mkfifo(path_1o, 0666));
+    stupid_error_check(mkfifo(path_2o, 0666));
+
 
     return 0;
 }
