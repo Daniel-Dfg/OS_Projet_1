@@ -1,5 +1,8 @@
 //C++
+#include <cstddef>
+#include <cstdio>
 #include <iostream>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -10,7 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-using std::cout, std::string, std::cerr, std::unordered_map, std::endl, std::unordered_set;
+using std::cout, std::string, std::cerr, std::unordered_map, std::endl, std::unordered_set, std::cin;
 //TODO : à voir si on met le namespace dans un hpp, et si on rajoute des fichiers. Il faudra relire les consignes à ce sujet.
 
 namespace ExceptionHandler{
@@ -145,6 +148,24 @@ int main(int argc, char* argv[]) {
     if (fd2 < 0){stupid_error_check(mkfifo(path_2.c_str(), FIFO_PREMISSION));}
     close(fd1);
     close(fd2);
+
+    // Communication bete entre 2 terminals (termianl1:./chat A B, terminal2:./chat B A)
+    char message_to_send[80];
+    char recived_message[80];
+    while (1) {
+        // Enoyer des messages
+        fd1 = open(path_1.c_str(), O_RDWR);
+        printf("%s :",user1_name.c_str());
+        fgets(message_to_send, sizeof(message_to_send), stdin);
+        write(fd1, message_to_send,sizeof(message_to_send));
+        close(fd1);
+
+        // Recevoir de messages
+        fd2 = open(path_2.c_str(), O_RDONLY);
+        read(fd2, recived_message, sizeof(recived_message));
+        printf("%s :%s", user2_name.c_str(), recived_message);
+        close(fd2);
+    }
 
 
     return 0;
