@@ -1,6 +1,4 @@
 //C++
-#include <cstddef>
-#include <cstdio>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -10,6 +8,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <signal.h>
+#include <sys/shm.h> //TODO => avant fork
 #include <sys/stat.h>
 #include <sys/types.h>
 
@@ -94,6 +94,11 @@ void stupid_error_check(int error){
         exit(1);
     }
 }
+
+void signal_handler(int sig){
+    exit(0);
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 3){
         ExceptionHandler::display_error_and_exit(ExceptionHandler::LACKING_USERNAME);
@@ -148,13 +153,15 @@ int main(int argc, char* argv[]) {
     if (fd2 < 0){stupid_error_check(mkfifo(path_2.c_str(), FIFO_PREMISSION));}
     close(fd1);
     close(fd2);
+
     // Speration en deux processus
     int process = fork();
 
     // Communication avec deux processus (Original: Send message, Secondaire: read message)
     // Faut avoir 2 terminal (terminal1:./chat A B, terminal2:./chat B A)
-    if (process > 0){
-        //Processus original
+
+    if (process > 0){//Processus original
+        signal(SIGINT, signal_handler); //TODO signal pour toutes les situation
         char message_to_send[80];
         while (1) {
             fd1 = open(path_1.c_str(), O_WRONLY);
@@ -162,15 +169,13 @@ int main(int argc, char* argv[]) {
             write(fd1, message_to_send,sizeof(message_to_send));
             close(fd1);
         }
-
     }
-    else {
-        // processus secondaire
+    else {// processus secondaire
         char recived_message[80];
         while (1) {
             fd2 = open(path_2.c_str(), O_RDONLY);
             read(fd2, recived_message, sizeof(recived_message));
-            printf("\n%s :%s", user2_name.c_str(), recived_message);
+            printf("[\x1B[4m%s\x1B[0m] %s", user2_name.c_str(), recived_message);
             close(fd2);
         }
     }
