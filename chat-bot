@@ -19,20 +19,28 @@ function error_handling(){
 function bot_loop(){
     while true;
     do
-        read -p "Entre command: " var
-        commands_responses $var
+        read -p "Entre command: " command
+        commands_responses $command
     done
 }
 
 # responses
 function commands_responses(){
-    case $1 in
-    "liste") echo "1";;
-    "li") echo "2";;
-    "qui suis-je") echo "3";;
-    "au revoir") echo "4";;
-    *) check_liste_bot $1
-    esac
+    if [ "$*" == "liste" ]; then
+        ls
+    elif [ $1 == "li" ]; then
+        if [ -f $2 ]; then
+            cat $2
+        else
+            echo "WARNING: File dosn't exist"
+        fi
+    elif [ "$*" == "qui suis-je" ]; then
+        echo $pseudo_recipient
+    elif [ "$*" == "au revoir" ]; then
+        exit 0
+    else
+        check_liste_bot $1
+    fi
 }
 
 # checking liste_bot.txt
