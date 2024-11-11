@@ -7,3 +7,9 @@ function commands_responses(){
     "au revoir") echo "4";;
     esac
 }
+
+while true;
+do
+    read -p "Entre command: " var # input
+    commands_responses $var
+done
