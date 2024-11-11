@@ -1,4 +1,10 @@
 #!/bin/bash
+
+# argv
+pseudo_recipien=$1
+pseudo_bot=$2
+
+#responses
 function commands_responses(){
     case $1 in
     "liste") echo "1";;
@@ -8,6 +14,7 @@ function commands_responses(){
     esac
 }
 
+# input loop
 while true;
 do
     read -p "Entre command: " var # input
