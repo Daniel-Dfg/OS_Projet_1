@@ -15,23 +15,48 @@ function error_handling(){
     fi
 }
 
-#responses
-function commands_responses(){
-    case $1 in
-    "liste") echo "1";;
-    "li") echo "2";;
-    "qui suis-je") echo "3";;
-    "au revoir") echo "4";;
-    esac
-}
-
 # input loop
 function bot_loop(){
     while true;
     do
-        read -p "Entre command: " var # input
-        commands_responses $var
+        read -p "Entre command: " command
+        commands_responses $command
     done
+}
+
+# responses
+function commands_responses(){
+    if [ "$*" == "liste" ]; then
+        ls
+    elif [ $1 == "li" ]; then
+        if [ -f $2 ]; then
+            cat $2
+        else
+            echo "WARNING: File dosn't exist"
+        fi
+    elif [ "$*" == "qui suis-je" ]; then
+        echo $pseudo_recipient
+    elif [ "$*" == "au revoir" ]; then
+        exit 0
+    else
+        check_liste_bot $1
+    fi
+}
+
+# checking liste_bot.txt
+function check_liste_bot(){
+    not_found=true
+    while read -r line; do
+        first_word=$(echo "$line" | awk '{print$1}')
+        if [ $first_word == $1 ]; then
+            echo $line
+            not_found=false
+        fi
+    done <liste-bot.txt
+
+    if $not_found ; then
+        echo "🤖 ?"
+    fi
 }
 
 # main function
