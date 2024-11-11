@@ -1,8 +1,19 @@
 #!/bin/bash
 
 # argv
-pseudo_recipien=$1
+pseudo_recipient=$1
 pseudo_bot=$2
+if [[ -z $pseudo_bot ]]; then
+    pseudo_bot="bot"
+fi
+
+#conditions
+function error_handling(){
+    if [[ -z $pseudo_recipient ]]; then # TODO selon les consignes faire pour un number incorrect de parametre donc plus que 2 aussi?
+        echo "chat-bot destinataire [pseudo]"
+        exit 1
+    fi
+}
 
 #responses
 function commands_responses(){
@@ -15,8 +26,17 @@ function commands_responses(){
 }
 
 # input loop
-while true;
-do
-    read -p "Entre command: " var # input
-    commands_responses $var
-done
+function bot_loop(){
+    while true;
+    do
+        read -p "Entre command: " var # input
+        commands_responses $var
+    done
+}
+
+# main function
+function main(){
+    error_handling
+    bot_loop
+}
+main
