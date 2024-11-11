@@ -1,0 +1,9 @@
+#!/bin/bash
+function commands_responses(){
+    case $1 in
+    "liste") echo "1";;
+    "li") echo "2";;
+    "qui suis-je") echo "3";;
+    "au revoir") echo "4";;
+    esac
+}
