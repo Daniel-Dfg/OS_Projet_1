@@ -19,16 +19,13 @@ void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){ //dev
 };
 
 void ExceptionHandler::display_warning(string &&warning_message){
-    //cette fonction existe car elle pourra (voire devra) être étendue,
-    //pour tous les warnings qu'on pourrait afficher (on pourrait limite créer une classe juste pour ça)
     cout << "WARNING : " << warning_message << endl;
     }
 
 void ExceptionHandler::check_username_validity(vector<string> &usernames){
     for (const string &username : usernames){
-        //les 3 trucs en-dessous sont peut-être à redéfinir comme des constantes globales ?
         const unordered_set<char> invalid_chars = {'[', ']', '-', '/'};
-        const short unsigned int username_size_limit = 30;
+        const short int username_size_limit = 30;
         const unordered_set<string> invalid_names = {"..", "."};
         if (username.empty()){
             display_error_and_exit(LACKING_USERNAME);
@@ -56,7 +53,7 @@ void ExceptionHandler::return_code_check(int error) { // TODO a changé
     // Error si "error" est -1
     if (error < 0) {
         std::cout << "error\n";
-        exit(1);
+        exit(error);
     }
 }
 
@@ -79,6 +76,9 @@ void ExceptionHandler::process_args(const int argc, char* argv[], bool &bot, boo
             } else {
                 arg == "--bot" ? bot = true : manual = true;
             }
+        }
+        else {
+            display_warning("L'argument" + arg + "n'est pas valide : n'utilisez que --bot et/ou --manual !");
         }
     }
 }

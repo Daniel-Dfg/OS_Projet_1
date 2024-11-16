@@ -25,6 +25,8 @@ class ChatHandler{
     static const mode_t FOLDER_PERMISSION = 0777;
     static const short unsigned int BUFFER_SIZE = 1024;
 
+    static const string EXIT_KEYWORD;
+
     string error_log; //utilisé pour stocker une éventuelle erreur dans le chat
     int exit_code = 0;
 

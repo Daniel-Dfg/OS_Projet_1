@@ -33,10 +33,10 @@ int main(int argc, char* argv[]) {
 
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
-    if (process > 0) { // Processus original
+    if (process > 0) { // Père
         signal(SIGINT, signal_handler);
         chat.access_sending_channel(user2_name);
-    } else { // Processus secondaire
+    } else { // Fils
         chat.access_reception_channel(user2_name);
     }
     return 0;

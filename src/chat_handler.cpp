@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cstring>
 
+const string ChatHandler::EXIT_KEYWORD = "/quit";
+
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manual{manual_} {
     // Tout initialiser
@@ -35,7 +37,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 void ChatHandler::access_sending_channel(const string &recipient) {
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
     char message_to_send[BUFFER_SIZE];
-    int bytes_written = 1;
+    int bytes_written;
     file_desc1 = open(path.c_str(), O_WRONLY);
     if (file_desc1 == -1) {
         perror("open");
@@ -49,15 +51,15 @@ void ChatHandler::access_sending_channel(const string &recipient) {
             cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
             bytes_written = -1;
         }
-    }while (bytes_written > 0 && file_desc2 != -1); // ET QUE le file descriptor est toujours là. Il faut le vérifier à chaque tour de boucle, donc dans le 'do'
-    //TODO : mieux gérer le cas ci-dessous
+    }while (bytes_written > 0);
     if (bytes_written < 0){
         cerr << "Erreur en écriture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
     }
     else if (bytes_written == 0){
-        cout << "Conversation terminée par..." << endl;
+        string end_user = (path == path_from_user1) ? user1_name : user2_name;
+        this -> error_log = "Conversation terminée par " + end_user;
+        this -> exit_code = EXIT_SUCCESS;
     }
-
     close(file_desc1);
     exit(this->exit_code);
 }
@@ -74,7 +76,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
     do {
-        int bytes_read = receive_message(received_message);
+        bytes_read = receive_message(received_message);
             if (bytes_read < 0) {
                 this->error_log = "Erreur de lecture";
                 this->exit_code = EXIT_FAILURE;
@@ -85,11 +87,12 @@ void ChatHandler::access_reception_channel(const string &sender) {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
             }
 
-    }while (file_desc1 != -1 && bytes_read > 0);
+    }while (bytes_read >= 0 && file_desc1 != -1);
 
     if(bytes_read != 0){
+        this->error_log = "Problème de lecture !";
+        this->exit_code = EXIT_FAILURE;
         cerr << "Problème de lecture !" << endl;
-        //TODO
     }
     else{
         this->error_log = "";
@@ -101,8 +104,8 @@ void ChatHandler::access_reception_channel(const string &sender) {
 
 
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
-    //define the real size of the message
-    //write just that amount, and say to the receiver that they've got to read n bytes
+    //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
+    //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
     if (fgets(message_to_send, sizeof(message_to_send), stdin) == NULL) {
         if (feof(stdin)) {
             this->error_log = "End of input reached.";
@@ -112,6 +115,12 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
             this->exit_code = EXIT_FAILURE;
         }
     }
+    if (strncmp(message_to_send, EXIT_KEYWORD.c_str(), EXIT_KEYWORD.size()) == 0) {
+        this->error_log = "User requested to quit the conversation.";
+        this->exit_code = EXIT_SUCCESS;
+        //manquant (TODO) : envoyer un signal à l'autre processus
+        return 0;}
+
     ssize_t bytes_written;
     this-> exit_code ? bytes_written = -1 : bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
     return static_cast<int>(bytes_written);
