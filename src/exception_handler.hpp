@@ -21,7 +21,7 @@ class ExceptionHandler {
     //On va probablement devoir raffiner ces exceptions, en disant par exemple lequel des deux usernames présentés est fautif.
     static const unordered_map<ExitCodes, string> EXIT_CODE_MESSAGES;
 
-    static void check_username_validity(const string &username1, const string &username2);
+    static void check_username_validity(vector<string> &usernames);
     static void display_error_and_exit(const ExitCodes &exit_code);
     static void display_warning(string &&warning_message);
     public:
