@@ -12,7 +12,9 @@ void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){ //dev
     if(it == EXIT_CODE_MESSAGES.end()){
          cerr << "Erreur inconnue, code " << exit_code << endl;
      }
-    cerr << it->second << endl;
+    else {
+        cerr << it->second << endl;
+    }
     exit(exit_code);
 };
 
@@ -22,8 +24,7 @@ void ExceptionHandler::display_warning(string &&warning_message){
     cout << "WARNING : " << warning_message << endl;
     }
 
-void ExceptionHandler::check_username_validity(const string &username1, const string &username2){
-    const vector<string> usernames = {username1, username2};
+void ExceptionHandler::check_username_validity(vector<string> &usernames){
     for (const string &username : usernames){
         //les 3 trucs en-dessous sont peut-être à redéfinir comme des constantes globales ?
         const unordered_set<char> invalid_chars = {'[', ']', '-', '/'};
@@ -46,7 +47,7 @@ void ExceptionHandler::check_username_validity(const string &username1, const st
             }
         }
     }
-    if(username1 == username2){
+    if(usernames[0] == usernames[1]){
         display_error_and_exit(INVALID_USERNAME);
     }
 }
@@ -64,7 +65,7 @@ void ExceptionHandler::process_args(const int argc, char* argv[], bool &bot, boo
         display_error_and_exit(LACKING_USERNAME);
     }
     std::vector<std::string> usernames = {argv[1], argv[2]};
-    check_username_validity(usernames[0], usernames[1]);
+    check_username_validity(usernames);
 
     if (argc > 5) {
         display_warning("Trop d'arguments passés (plus de 4)");

@@ -7,8 +7,6 @@ La classe chat est censée :
 - Assurer la communication et la terminaison des chats
 
 Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
-
-Probablement à séparer en d'autres sous-classes
 */
 
 #include <fcntl.h>
@@ -23,20 +21,27 @@ Probablement à séparer en d'autres sous-classes
 
 class ChatHandler{
     private:
-    const mode_t FIFO_PERMISSION = 0666;
-    const mode_t FOLDER_PERMISSION = 0777;
+    static const mode_t FIFO_PERMISSION = 0666;
+    static const mode_t FOLDER_PERMISSION = 0777;
+    static const short unsigned int BUFFER_SIZE = 1024;
+
+    string error_log; //utilisé pour stocker une éventuelle erreur dans le chat
+    int exit_code = 0;
 
     const string user1_name, user2_name;
     string path_from_user1, path_from_user2;
     int file_desc1, file_desc2;
 
     const bool bot, manual;
+
+    int send_message(char (&thing)[BUFFER_SIZE]); //renvoie : nombre de bytes envoyés si tout s'est bien passé, -1 sinon.
+    int receive_message(char (&received_message)[BUFFER_SIZE]); //même idée que pour send_message
+
     public:
     ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_);
 
-    //TODO mieux encapsuler tout cela
-    void send_message_to(const std::string &recipient);
-    void receive_message_from(const std::string &sender);
+    void access_sending_channel(const string &recipient);
+    void access_reception_channel(const string &sender);
 };
 
 #endif // CHAT_HANDLER_HPP

@@ -3,8 +3,7 @@
 #include <iostream>
 #include <cstring>
 
-
-ChatHandler::ChatHandler(const std::string &username1_, const std::string &username2_, const bool &bot_, const bool &manual_)
+ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manual{manual_} {
     // Tout initialiser
     DIR *temp = opendir("temp");
@@ -33,61 +32,100 @@ ChatHandler::ChatHandler(const std::string &username1_, const std::string &usern
     close(file_desc2);
 }
 
-void ChatHandler::send_message_to(const std::string &recipient) {
-    std::string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
-    char message_to_send[1024];
-    while (true) {
-        file_desc1 = open(path.c_str(), O_WRONLY);
-        if (fgets(message_to_send, sizeof(message_to_send), stdin) == NULL) {
-            if (feof(stdin)) {
-                std::cerr << "End of input reached." << std::endl;
-                close(file_desc1);
-                exit(EXIT_SUCCESS);
-            } else if (ferror(stdin)) {
-                std::cerr << "Error reading input: " << errno << std::endl;
-                close(file_desc1);
-                exit(EXIT_FAILURE);
-            }
-        }
-        ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
-        if (bytes_written < 0) {
-            std::cerr << "Error writing to file: " << strerror(errno) << std::endl;
-            close(file_desc1);
-            exit(EXIT_FAILURE);
-        }
-
-        close(file_desc1);
-        close(file_desc1);
+void ChatHandler::access_sending_channel(const string &recipient) {
+    string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
+    char message_to_send[BUFFER_SIZE];
+    int bytes_written = 1;
+    file_desc1 = open(path.c_str(), O_WRONLY);
+    if (file_desc1 == -1) {
+        perror("open");
+        return; // Sortir de la fonction si l'ouverture a échoué
     }
+    do {
+        if (file_desc1 != -1){ //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
+            bytes_written = send_message(message_to_send);
+        }
+        else {
+            cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
+            bytes_written = -1;
+        }
+    }while (bytes_written > 0 && file_desc2 != -1); // ET QUE le file descriptor est toujours là. Il faut le vérifier à chaque tour de boucle, donc dans le 'do'
+    //TODO : mieux gérer le cas ci-dessous
+    if (bytes_written < 0){
+        cerr << "Erreur en écriture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+    }
+    else if (bytes_written == 0){
+        cout << "Conversation terminée par..." << endl;
+    }
+
+    close(file_desc1);
+    exit(this->exit_code);
 }
 
-void ChatHandler::receive_message_from(const std::string &sender) {
-    std::string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
-    std::string ansi_beginning = "\x1B[4m";
-    std::string ansi_end = "\x1B[0m";
-
-    if (bot) {
-        ansi_beginning = "";
-        ansi_end = "";
+void ChatHandler::access_reception_channel(const string &sender) {
+    string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
+    file_desc2 = open(path.c_str(), O_RDONLY);
+    if (file_desc2 < 0) {
+        cerr << "Error opening file: " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
     }
+    char received_message[BUFFER_SIZE];
+    int bytes_read = 0;
+    string ansi_beginning = bot ? "" : "\x1B[4m";
+    string ansi_end = bot ? "" : "\x1B[0m";
+    do {
+        int bytes_read = receive_message(received_message);
+            if (bytes_read < 0) {
+                this->error_log = "Erreur de lecture";
+                this->exit_code = EXIT_FAILURE;
+                cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+            }
 
-    char received_message[1024];
-    while (true) {
-        file_desc2 = open(path.c_str(), O_RDONLY);
-        if (file_desc2 < 0) {
-            std::cerr << "Error opening file: " << strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
-        }
+            else if (bytes_read > 0) {
+                printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+            }
 
-        ssize_t bytes_read = read(file_desc2, received_message, sizeof(received_message) - 1);
-        if (bytes_read < 0) {
-            std::cerr << "Error reading from file: " << strerror(errno) << std::endl;
-            close(file_desc2);
-            exit(EXIT_FAILURE);
-        }
+    }while (file_desc1 != -1 && bytes_read > 0);
 
-        received_message[bytes_read] = '\0'; // Null-terminate the string
-        printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
-        close(file_desc2);
+    if(bytes_read != 0){
+        cerr << "Problème de lecture !" << endl;
+        //TODO
     }
+    else{
+        this->error_log = "";
+        this->exit_code = EXIT_SUCCESS;
+    }
+    close(file_desc2);
+    exit(this->exit_code);
+}
+
+
+int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
+    //define the real size of the message
+    //write just that amount, and say to the receiver that they've got to read n bytes
+    if (fgets(message_to_send, sizeof(message_to_send), stdin) == NULL) {
+        if (feof(stdin)) {
+            this->error_log = "End of input reached.";
+            this->exit_code = EXIT_SUCCESS;
+        } else if (ferror(stdin)) {
+            this->error_log = "Error reading input: ";
+            this->exit_code = EXIT_FAILURE;
+        }
+    }
+    ssize_t bytes_written;
+    this-> exit_code ? bytes_written = -1 : bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
+    return static_cast<int>(bytes_written);
+}
+
+int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
+    ssize_t bytes_read = read(file_desc2, received_message, sizeof(received_message) - 1);
+    if (bytes_read < 0) {
+        perror("read");
+        return -1;
+    }
+    if (bytes_read == 0) {
+        return 0; // Fin de la conversation
+    }
+    received_message[bytes_read] = '\0'; // Null-terminate the string
+    return static_cast<int>(bytes_read);
 }
