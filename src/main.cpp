@@ -20,8 +20,6 @@ int main(int argc, char* argv[]) {
     bool bot = false;
     bool manual = false;
     ExceptionHandler::process_args(argc, argv, bot, manual);
-    //il est probable qu'on devra regrouper les argv dans une ou plusieurs classe(s), genre 'ChatHandler'.
-    //On peut aussi penser à d'autres classes/méthodes spécifiques à chaque message, genre 'display(bool is_formatted=true/false)'
 
     string user1_name = argv[1];
     string user2_name = argv[2];
