@@ -70,15 +70,15 @@ void ExceptionHandler::process_args(const int argc, char* argv[], bool &bot, boo
 
     for (int i = 3; i < argc; i++) {
         std::string arg = argv[i];
-        if (arg == "--bot" || arg == "--manuel") {
-            if ((bot && arg == "--bot") || (manual && arg == "--manuel")) {
+        if (arg == "--bot" || arg == "--manual") {
+            if ((bot && arg == "--bot") || (manual && arg == "--manual")) {
                 display_warning("Un même argument a été écrit deux fois (" + arg + ")");
             } else {
                 arg == "--bot" ? bot = true : manual = true;
             }
         }
         else {
-            display_warning("L'argument" + arg + "n'est pas valide : n'utilisez que --bot et/ou --manual !");
+            display_warning("L'argument " + arg + " n'est pas valide : n'utilisez que --bot et/ou --manual !");
         }
     }
 }

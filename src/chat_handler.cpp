@@ -48,23 +48,23 @@ void ChatHandler::access_sending_channel(const string &recipient) {
         return; // Sortir de la fonction si l'ouverture a échoué
     }
     do {
-        if (file_desc1 != -1){ //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
+        if (file_desc1 != -1) { //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
             bytes_written = send_message(message_to_send);
             clear_current_line();
-            printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
-        }
-        else {
+            if (!bot) {
+                printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
+            }
+        } else {
             cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
             bytes_written = -1;
         }
-    }while (bytes_written > 0);
-    if (bytes_written < 0){
+    } while (bytes_written > 0);
+    if (bytes_written < 0) {
         cerr << "Erreur en écriture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
-    }
-    else if (bytes_written == 0){
+    } else if (bytes_written == 0) {
         string end_user = (path == path_from_user1) ? user1_name : user2_name;
-        this -> error_log = "Conversation terminée par " + end_user;
-        this -> exit_code = EXIT_SUCCESS;
+        this->error_log = "Conversation terminée par " + end_user;
+        this->exit_code = EXIT_SUCCESS;
     }
     close(file_desc1);
     exit(this->exit_code);
@@ -83,31 +83,36 @@ void ChatHandler::access_reception_channel(const string &sender) {
     string ansi_end = bot ? "" : "\x1B[0m";
     do {
         bytes_read = receive_message(received_message);
-            if (bytes_read < 0) {
-                this->error_log = "Erreur de lecture";
-                this->exit_code = EXIT_FAILURE;
-                cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
-            }
-
-            else if (bytes_read > 0) {
+        if (bytes_read < 0) {
+            this->error_log = "Erreur de lecture";
+            this->exit_code = EXIT_FAILURE;
+            cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+        }
+        else if (bytes_read > 0) {
+            std::cout << '\a';
+            if (manual) {
+                pending_messages.push("[" + ansi_beginning + sender + ansi_end + "] " + received_message);
+                pending_bytes += bytes_read;
+                if (pending_bytes > 4096) {
+                    display_pending_messages();
+                }
+            } else {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
             }
+        }
+    } while (bytes_read >= 0 && file_desc1 != -1);
 
-    }while (bytes_read >= 0 && file_desc1 != -1);
-
-    if(bytes_read != 0){
+    if (bytes_read != 0) {
         this->error_log = "Problème de lecture !";
         this->exit_code = EXIT_FAILURE;
         cerr << "Problème de lecture !" << endl;
-    }
-    else{
+    } else {
         this->error_log = "";
         this->exit_code = EXIT_SUCCESS;
     }
     close(file_desc2);
     exit(this->exit_code);
 }
-
 
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
@@ -127,6 +132,10 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
         //manquant (TODO) : envoyer un signal à l'autre processus
         return 0;}
 
+    if (manual) {
+        display_pending_messages();
+    }
+
     ssize_t bytes_written;
     this-> exit_code ? bytes_written = -1 : bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
     return static_cast<int>(bytes_written);
@@ -143,4 +152,12 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
     }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);
+}
+
+void ChatHandler::display_pending_messages() {
+    while (!pending_messages.empty()) {
+        std::cout << pending_messages.front() << std::endl;
+        pending_messages.pop();
+    }
+    pending_bytes = 0;
 }

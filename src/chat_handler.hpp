@@ -16,11 +16,14 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include <sys/shm.h> //TODO => avant fork
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <queue>
 #include "exception_handler.hpp"
 
 
 class ChatHandler{
     private:
+    std::queue<string> pending_messages;
+    size_t pending_bytes = 0;
     static const mode_t FIFO_PERMISSION = 0666;
     static const mode_t FOLDER_PERMISSION = 0777;
     static const short unsigned int BUFFER_SIZE = 1024;
@@ -40,6 +43,7 @@ class ChatHandler{
     int receive_message(char (&received_message)[BUFFER_SIZE]); //même idée que pour send_message
     static inline void clear_current_line(){
         std::cout << "\x1b[1A" << "\x1b[2K" << std::flush;}
+    void display_pending_messages();
     public:
     ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_);
 

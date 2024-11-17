@@ -21,21 +21,25 @@ int main(int argc, char* argv[]) {
     bool manual = false;
     ExceptionHandler::process_args(argc, argv, bot, manual);
 
-    string user1_name = argv[1];
-    string user2_name = argv[2];
+    std::string* user1_name = new std::string(argv[1]);
+    std::string* user2_name = new std::string(argv[2]);
 
-    ChatHandler chat = ChatHandler(user1_name, user2_name, bot, manual);
+    ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manual);
 
-    // Speration en deux processus
+    // Séparation en deux processus
     int process = fork();
 
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
     if (process > 0) { // Père
         signal(SIGINT, signal_handler);
-        chat.access_sending_channel(user2_name);
+        chat.access_sending_channel(*user2_name);
     } else { // Fils
-        chat.access_reception_channel(user2_name);
+        chat.access_reception_channel(*user2_name);
     }
+
+    delete user1_name;
+    delete user2_name;
+
     return 0;
 }
