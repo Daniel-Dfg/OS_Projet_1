@@ -1,7 +1,10 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
+#include <cstdio>
+#include <fcntl.h>
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 
 const string ChatHandler::EXIT_KEYWORD = "/quit";
 
@@ -20,8 +23,8 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     path_from_user2 = "temp/" + user2_name + "_" + user1_name + ".chat";
 
     // Initialize file descriptors
-    file_desc1 = open(path_from_user1.c_str(), O_PATH);
-    file_desc2 = open(path_from_user2.c_str(), O_PATH);
+    file_desc1 = access(path_from_user1.c_str(), F_OK);
+    file_desc2 = access(path_from_user2.c_str(), F_OK);
 
     // Create Named Pipes (FIFO)
     if (file_desc1 < 0) {
@@ -30,8 +33,6 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     if (file_desc2 < 0) {
         ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
     }
-    close(file_desc1);
-    close(file_desc2);
 }
 
 void ChatHandler::access_sending_channel(const string &recipient) {
