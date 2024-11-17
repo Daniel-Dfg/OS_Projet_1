@@ -37,8 +37,11 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 
 void ChatHandler::access_sending_channel(const string &recipient) {
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
+    string sender = (recipient == user2_name) ? user1_name : user2_name;
     char message_to_send[BUFFER_SIZE];
     int bytes_written;
+    string ansi_beginning = bot ? "" : "\x1B[4m";
+    string ansi_end = bot ? "" : "\x1B[0m";
     file_desc1 = open(path.c_str(), O_WRONLY);
     if (file_desc1 == -1) {
         perror("open");
@@ -47,6 +50,8 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     do {
         if (file_desc1 != -1){ //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
             bytes_written = send_message(message_to_send);
+            clear_current_line();
+            printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
         }
         else {
             cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
