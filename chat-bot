@@ -3,12 +3,10 @@
 # argv
 pseudo_recipient=$1
 pseudo_bot=$2
+extra=$3
 if [[ -z $pseudo_bot ]]; then
     pseudo_bot="bot"
 fi
-
-# PIPES stdout of chat = 0, stdin of chat = 1
-coproc CHAT_PIPES { ./chat $pseudo_bot $pseudo_recipient --bot; }
 
 #conditions
 function error_handling(){
@@ -16,11 +14,14 @@ function error_handling(){
         echo "chat-bot destinataire [pseudo]"
         exit 1
     fi
+    if [[ -n $extra ]]; then
+        echo "WARNING: chat-bot takes one or 2 parametres not more"
+    fi
 }
 
 # input loop
 function bot_loop(){
-    while IFS= read -r line <&${CHAT_PIPES[0]}; do
+    while IFS= read -r line <&$1; do
         commands_responses ${line#* }
     done
 }
@@ -63,6 +64,9 @@ function check_liste_bot(){
 # main function
 function main(){
     error_handling
-    bot_loop
+    # PIPES stdout of chat = 0, stdin of chat = 1
+    coproc CHAT_PIPES { ./chat $pseudo_bot $pseudo_recipient --bot; }
+
+    bot_loop ${CHAT_PIPES[0]} >&${CHAT_PIPES[1]}
 }
-main >&${CHAT_PIPES[1]}
+main

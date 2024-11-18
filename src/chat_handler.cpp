@@ -52,7 +52,6 @@ void ChatHandler::access_sending_channel(const string &recipient) {
             bytes_written = send_message(message_to_send);
             if (bytes_written > 0) {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
-                fflush(stdout);
             }
         } else {
             cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
