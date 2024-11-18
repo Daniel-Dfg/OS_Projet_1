@@ -9,3 +9,7 @@ bash shell
 info f201
 ρ bot
 recette de tarte à la fraise
+hello world!
+0 1
+java != javascript
+lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.

@@ -53,6 +53,7 @@ void ChatHandler::access_sending_channel(const string &recipient) {
             clear_current_line();
             if (!bot) {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
+                fflush(stdout);
             }
         } else {
             cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
@@ -98,6 +99,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
                 }
             } else {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+                fflush(stdout);
             }
         }
     } while (bytes_read >= 0 && file_desc1 != -1);
