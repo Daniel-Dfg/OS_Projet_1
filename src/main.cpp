@@ -18,13 +18,13 @@ void signal_handler(const int sig){ //TODO : bouger ceci à un endroit pertinent
 
 int main(int argc, char* argv[]) {
     bool bot = false;
-    bool manual = false;
-    ExceptionHandler::process_args(argc, argv, bot, manual);
+    bool manuel = false;
+    ExceptionHandler::process_args(argc, argv, bot, manuel);
 
     std::string* user1_name = new std::string(argv[1]);
     std::string* user2_name = new std::string(argv[2]);
 
-    ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manual);
+    ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manuel);
 
     // Séparation en deux processus
     int process = fork();

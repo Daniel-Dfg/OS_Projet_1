@@ -8,8 +8,8 @@
 
 const string ChatHandler::EXIT_KEYWORD = "/quit";
 
-ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_)
-    : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manual{manual_} {
+ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
+    : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
     // Tout initialiser
     DIR *temp = opendir("temp");
     if (temp) {
@@ -91,7 +91,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
         }
         else if (bytes_read > 0) {
             std::cout << '\a';
-            if (manual) {
+            if (manuel) {
                 pending_messages.push("[" + ansi_beginning + sender + ansi_end + "] " + received_message);
                 pending_bytes += bytes_read;
                 if (pending_bytes > 4096) {
@@ -134,7 +134,7 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
         //manquant (TODO) : envoyer un signal à l'autre processus
         return 0;}
 
-    if (manual) {
+    if (manuel) {
         display_pending_messages();
     }
 

@@ -25,7 +25,7 @@ class ExceptionHandler {
     static void display_error_and_exit(const ExitCodes &exit_code);
     static void display_warning(string &&warning_message);
     public:
-    static void process_args(const int argc, char* argv[], bool &bot, bool &manual);
+    static void process_args(const int argc, char* argv[], bool &bot, bool &manuel);
     static void return_code_check(int error);
 };
 

@@ -37,7 +37,7 @@ class ChatHandler{
     string path_from_user1, path_from_user2;
     int file_desc1, file_desc2;
 
-    const bool bot, manual;
+    const bool bot, manuel;
 
     int send_message(char (&thing)[BUFFER_SIZE]); //renvoie : nombre de bytes envoyés si tout s'est bien passé, -1 sinon.
     int receive_message(char (&received_message)[BUFFER_SIZE]); //même idée que pour send_message
@@ -45,7 +45,7 @@ class ChatHandler{
         std::cout << "\x1b[1A" << "\x1b[2K" << std::flush;}
     void display_pending_messages();
     public:
-    ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manual_);
+    ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_);
 
     void access_sending_channel(const string &recipient);
     void access_reception_channel(const string &sender);
