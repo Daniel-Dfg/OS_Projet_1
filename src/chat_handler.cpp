@@ -50,8 +50,7 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     do {
         if (file_desc1 != -1) { //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
             bytes_written = send_message(message_to_send);
-            clear_current_line();
-            if (!bot) {
+            if (bytes_written > 0) {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
                 fflush(stdout);
             }

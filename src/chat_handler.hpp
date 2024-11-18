@@ -41,8 +41,6 @@ class ChatHandler{
 
     int send_message(char (&thing)[BUFFER_SIZE]); //renvoie : nombre de bytes envoyés si tout s'est bien passé, -1 sinon.
     int receive_message(char (&received_message)[BUFFER_SIZE]); //même idée que pour send_message
-    static inline void clear_current_line(){
-        std::cout << "\x1b[1A" << "\x1b[2K" << std::flush;}
     void display_pending_messages();
     public:
     ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_);
