@@ -7,6 +7,9 @@ if [[ -z $pseudo_bot ]]; then
     pseudo_bot="bot"
 fi
 
+# PIPES stdout of chat = 0, stdin of chat = 1
+coproc CHAT_PIPES { ./chat $pseudo_bot $pseudo_recipient --bot; }
+
 #conditions
 function error_handling(){
     if [[ -z $pseudo_recipient ]]; then # TODO selon les consignes faire pour un number incorrect de parametre donc plus que 2 aussi?
@@ -17,10 +20,8 @@ function error_handling(){
 
 # input loop
 function bot_loop(){
-    while true;
-    do
-        read -p "Entre command: " command
-        commands_responses $command
+    while IFS= read -r line <&${CHAT_PIPES[0]}; do
+        commands_responses ${line#* }
     done
 }
 
@@ -32,7 +33,7 @@ function commands_responses(){
         if [[ -f $2 && -n $2 ]]; then
             cat $2
         else
-            echo "WARNING: File dosn't exist"
+            echo "WARNING: File doesn't exist"
         fi
     elif [ "$*" == "qui suis-je" ]; then
         echo $pseudo_recipient
@@ -46,10 +47,10 @@ function commands_responses(){
 # checking liste_bot.txt
 function check_liste_bot(){
     not_found=true
-    while read -r line; do
-        first_word=$(echo "$line" | awk '{print$1}')
+    while IFS= read -r line; do
+        first_word=${line%% *}
         if [ $first_word == $1 ]; then
-            echo $line
+            echo ${line#* } # rest of the line
             not_found=false
         fi
     done <liste-bot.txt
@@ -64,4 +65,4 @@ function main(){
     error_handling
     bot_loop
 }
-main
+main >&${CHAT_PIPES[1]}
