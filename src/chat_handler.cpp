@@ -100,7 +100,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
                 fflush(stdout);
             }
         }
-    } while (bytes_read >= 0 && file_desc1 != -1);
+    } while (bytes_read >= 0);
 
     if (bytes_read != 0) {
         this->error_log = "Problème de lecture !";
