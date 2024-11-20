@@ -8,6 +8,11 @@
 
 const string ChatHandler::EXIT_KEYWORD = "/quit";
 
+std::string g_path_from_user1;
+std::string g_path_from_user2;
+int g_file_desc1;
+int g_file_desc2;
+
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
     // Tout initialiser
@@ -21,10 +26,18 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     // Initialize FIFO paths
     path_from_user1 = "temp/" + user1_name + "_" + user2_name + ".chat";
     path_from_user2 = "temp/" + user2_name + "_" + user1_name + ".chat";
+    g_path_from_user1 = path_from_user1;
+    g_path_from_user2 = path_from_user2;
 
     // Initialize file descriptors
     file_desc1 = access(path_from_user1.c_str(), F_OK);
     file_desc2 = access(path_from_user2.c_str(), F_OK);
+    g_file_desc1 = file_desc1;
+    g_file_desc2 = file_desc2;
+
+    if (manuel){
+        shared_memory_ptr = init_shared_memory_block();
+    }
 
     // Create Named Pipes (FIFO)
     if (file_desc1 < 0) {
@@ -160,4 +173,39 @@ void ChatHandler::display_pending_messages() {
         pending_messages.pop();
     }
     pending_bytes = 0;
+}
+
+std::queue<string>* ChatHandler::init_shared_memory_block(){
+        // Autoriser les lectures et ecritures
+        const int protection = PROT_READ | PROT_WRITE;
+        // Partager avec son/ses enfants 
+        const int visibility = MAP_SHARED | MAP_ANONYMOUS;
+        // Le fichier pas utilise
+        const int fd = -1;
+        const int offset = 0;
+        shared_memory_ptr = static_cast<std::queue<string>*>(mmap(
+            NULL, shared_memory_size, protection, visibility, fd, offset
+            ));
+        
+        if (shared_memory_ptr == MAP_FAILED){
+            perror("mmap");
+            exit(EXIT_FAILURE);
+        }
+        new (shared_memory_ptr) std::queue<string>();
+        return shared_memory_ptr;
+}
+
+void ChatHandler::remove_shared_memory_block(){
+    if (shared_memory_ptr){
+        if (munmap(shared_memory_ptr, shared_memory_size) == -1){
+            perror("munmap");
+        }
+    }
+    shared_memory_ptr = nullptr;
+}
+
+ChatHandler::~ChatHandler(){
+    if (manuel && shared_memory_ptr){
+        remove_shared_memory_block();
+    }
 }
