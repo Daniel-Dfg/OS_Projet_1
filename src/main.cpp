@@ -48,6 +48,7 @@ int main(int argc, char* argv[]) {
         signal(SIGINT, sigint_signal_handler);  
         chat.access_sending_channel(*user2_name);
     } else { // Fils
+        signal(SIGPIPE, sigpipe_signal_handler);
         chat.access_reception_channel(*user2_name);
     }
 
