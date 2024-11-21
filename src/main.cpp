@@ -13,19 +13,29 @@
 #include <sys/types.h>
 #include <cstdio>
 
-void sigpipe_signal_handler(const int sig){ //TODO : bouger ceci à un endroit pertinent
-    printf("The other user closed the chat. pipesig\n");
-    exit(0);
-}
-void sigint_signal_handler(const int sig){
-    printf("Exiting now... sigint\n");
-    // Close the communication channels before removing the files
-    close(g_file_desc1);
-    close(g_file_desc2);
-    std::remove(g_path_from_user1.c_str());
-    std::remove(g_path_from_user2.c_str());
+ChatHandler* g_chat_handler = nullptr; // I was kinda obligated to do this..
 
-    exit(0);
+void signal_handler(const int sig){
+    if (sig == SIGINT){
+        printf("Exiting now... sigint\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+        // Close the fifo channels before removing the files
+        close(g_file_desc1);
+        close(g_file_desc2);
+        std::remove(g_path_from_user1.c_str());
+        std::remove(g_path_from_user2.c_str());
+        exit(4);    
+    }
+    else if (sig == SIGPIPE){
+        printf("The other user closed the chat. pipesig\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+
+        exit(4);
+    }
 }
 int main(int argc, char* argv[]) {
 
@@ -37,21 +47,23 @@ int main(int argc, char* argv[]) {
     std::string* user1_name = new std::string(argv[1]);
     std::string* user2_name = new std::string(argv[2]);
 
-    ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manuel);
+    //ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manuel);
+    g_chat_handler = new ChatHandler(*user1_name, *user2_name, bot, manuel);
+
+    signal(SIGPIPE, signal_handler);
 
     // Séparation en deux processus
     int process = fork();
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
     if (process > 0) { // Père
-        signal(SIGPIPE, sigpipe_signal_handler);
-        signal(SIGINT, sigint_signal_handler);  
-        chat.access_sending_channel(*user2_name);
+        signal(SIGINT, signal_handler);  
+        g_chat_handler->access_sending_channel(*user2_name);
     } else { // Fils
-        signal(SIGPIPE, sigpipe_signal_handler);
-        chat.access_reception_channel(*user2_name);
+        g_chat_handler->access_reception_channel(*user2_name);
     }
 
+    delete g_chat_handler;
     delete user1_name;
     delete user2_name;
 
