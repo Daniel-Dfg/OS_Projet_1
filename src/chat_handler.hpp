@@ -13,11 +13,12 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include <unistd.h>
 #include <dirent.h>
 #include <signal.h>
-//#include <sys/shm.h> //TODO => avant fork
-#include<sys/mman.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <queue>
+#include <cstring>
+#include <iostream> 
+#include <memory>
 #include "exception_handler.hpp"
 
 extern std::string g_path_from_user1;
@@ -25,16 +26,21 @@ extern std::string g_path_from_user2;
 extern int g_file_desc1;
 extern int g_file_desc2;
 
+const size_t SHARED_MEMORY_SIZE = 4096;
+
+struct SharedMemoryQueue{
+    size_t total_chars = 0;
+    char messages[SHARED_MEMORY_SIZE];
+};
+
 class ChatHandler{
     private:
-    std::queue<string> pending_messages;
+    //std::queue<string>* pending_messages = nullptr;
     size_t pending_bytes = 0;
     static const mode_t FIFO_PERMISSION = 0666;
     static const mode_t FOLDER_PERMISSION = 0777;
     static const short unsigned int BUFFER_SIZE = 1024;
-
-    static const string EXIT_KEYWORD;
-
+    
     string error_log; //utilisé pour stocker une éventuelle erreur dans le chat
     int exit_code = 0;
 
@@ -42,21 +48,24 @@ class ChatHandler{
     string path_from_user1, path_from_user2;
     int file_desc1, file_desc2;
 
-    const bool bot, manuel;
-    std::queue<string>* shared_memory_ptr;
-    const size_t shared_memory_size = 4096;
+    SharedMemoryQueue* shared_memory_queue = nullptr;
+    SharedMemoryQueue* init_shared_memory_block();
 
     int send_message(char (&thing)[BUFFER_SIZE]); //renvoie : nombre de bytes envoyés si tout s'est bien passé, -1 sinon.
     int receive_message(char (&received_message)[BUFFER_SIZE]); //même idée que pour send_message
-    void display_pending_messages();
-    public:
 
+    public:
+    const bool bot, manuel;
     ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_);
     ~ChatHandler();
     void access_sending_channel(const string &recipient);
     void access_reception_channel(const string &sender);
-    std::queue<std::string>* init_shared_memory_block();
-    void remove_shared_memory_block();
+
+    //
+    void display_pending_messages();
+    void add_message_to_shared_memory(const string& formatted_message);
+    
+    //
 };
 
 #endif // CHAT_HANDLER_HPP
