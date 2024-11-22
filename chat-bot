@@ -3,55 +3,66 @@
 # argv
 pseudo_recipient="$1"
 pseudo_bot="$2"
-extra="$3"
+extra="$#"
 if [[ -z "$pseudo_bot" ]]; then
     pseudo_bot="bot"
 fi
 
 #conditions
 function error_handling(){
-    if [[ -z "$pseudo_recipient" ]]; then # TODO selon les consignes faire pour un number incorrect de parametre donc plus que 2 aussi?
+    if [[ -z "$pseudo_recipient" ]]; then
         echo "chat-bot destinataire [pseudo]"
         exit 1
     fi
-    if [[ -n "$extra" ]]; then
+    if [[ $extra -gt 2 ]]; then
         echo "WARNING: chat-bot takes one or 2 parametres not more"
     fi
 }
 
 # input loop
 function bot_loop(){
-    while IFS= read -r line <&$1; do
-        commands_responses ${line#* }
+    chat_stdout_pipe=$1
+    # Wait for input that commes from chat_stdout_pipe
+    while IFS= read -r line <&$chat_stdout_pipe; do
+        recipient_message=${line#* }
+        commands_responses $recipient_message # without "" because, it will transform recipient_message to one string
     done
 }
 
 # responses
 function commands_responses(){
-    if [[ "$*" == "liste" ]]; then
+
+    recipient_message="$*"
+    args_number="$#"
+    file_name="$2"
+
+    if [[ "$recipient_message" == "liste" ]]; then
         echo $(ls)
-    elif [[ "$1" == "li" ]]; then
-        if [[ -f "$2" && -n "$2" ]]; then
+    elif [[ "$1" == "li" && $args_number -eq 2 ]]; then
+        if [[ -f $file_name && -n $file_name ]]; then
             echo $(cat "$2") # TODO echo each line as a response
         else
             echo "WARNING: File doesn't exist"
         fi
-    elif [[ "$*" == "qui suis-je" ]]; then
+    elif [[ "$recipient_message" == "qui suis-je" ]]; then
         echo "$pseudo_recipient"
-    elif [[ "$*" == "au revoir" ]]; then
+    elif [[ "$recipient_message" == "au revoir" ]]; then
         exit 0
     else
-        check_liste_bot "$*"
+        check_liste_bot "$recipient_message"
     fi
 }
 
 # checking liste_bot.txt
 function check_liste_bot(){
+    recipient_message="$1"
     not_found=true
+
+    # Read eahc line of liste-bot.txt one by one
     while IFS= read -r line; do
-        first_word=${line%% *}
-        if [[ "$first_word" == "$*" ]]; then
-            echo "${line#* }" # rest of the line
+        first_word="${line%% *}"
+        if [[ "$first_word" == "$recipient_message" ]]; then
+            echo "${line#* }" # rest of the line without first_word
             not_found=false
         fi
     done <liste-bot.txt
@@ -65,8 +76,7 @@ function check_liste_bot(){
 function main(){
     error_handling
     # PIPES stdout of chat = 0, stdin of chat = 1
-    coproc CHAT_PIPES { ./chat "$pseudo_bot" "$pseudo_recipient" --bot; }
-
+    coproc CHAT_PIPES { "./chat" "$pseudo_bot" "$pseudo_recipient" "--bot"; }
     bot_loop ${CHAT_PIPES[0]} >&${CHAT_PIPES[1]}
 }
 main
