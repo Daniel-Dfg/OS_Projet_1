@@ -1,5 +1,7 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
+
+
 #include <cstdio>
 #include <fcntl.h>
 #include <iostream>
@@ -10,6 +12,7 @@ std::string g_path_from_user1;
 std::string g_path_from_user2;
 int g_file_desc1;
 int g_file_desc2;
+ChatHandler* g_chat_handler = nullptr;
 
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
@@ -44,7 +47,33 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
         ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
     }
 }
+void Signal_Handler(const int sig){
+    if (sig == SIGINT){
+        printf("Exiting now... sigint\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+        // Close the fifo channels before removing the files
+        close(g_file_desc1);
+        close(g_file_desc2);
+        std::remove(g_path_from_user1.c_str());
+        std::remove(g_path_from_user2.c_str());
+        exit(4);    
+    }
+    else if (sig == SIGPIPE){
+        printf("The other user closed the chat. pipesig\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+        // Close the fifo channels before removing the files
+        close(g_file_desc1);
+        close(g_file_desc2);
+        std::remove(g_path_from_user1.c_str());
+        std::remove(g_path_from_user2.c_str());
 
+        exit(4);
+    }
+}
 void ChatHandler::access_sending_channel(const string &recipient) {
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
     string sender = (recipient == user2_name) ? user1_name : user2_name;
@@ -79,7 +108,6 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     close(file_desc1);
     exit(this->exit_code);
 }
-
 void ChatHandler::access_reception_channel(const string &sender) {
     string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
     file_desc2 = open(path.c_str(), O_RDONLY);
@@ -122,24 +150,33 @@ void ChatHandler::access_reception_channel(const string &sender) {
     close(file_desc2);
     exit(this->exit_code);
 }
-
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
     //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
+
+    struct sigaction action;
+    action.sa_handler = Signal_Handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
     if (fgets(message_to_send, sizeof(message_to_send), stdin) == NULL) {
         if (feof(stdin)) {
             this->error_log = "End of input reached.";
             this->exit_code = EXIT_SUCCESS;
         } else if (ferror(stdin)) {
+            if (errno == SIGPIPE){
+                this->error_log = "Interrupted by sigint, the other user closed the chat.";
+                this->exit_code = EXIT_FAILURE;
+            }else{
             this->error_log = "Error reading input: ";
             this->exit_code = EXIT_FAILURE;
+            }
         }
     }
     ssize_t bytes_written;
     this-> exit_code ? bytes_written = -1 : bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
     return static_cast<int>(bytes_written);
 }
-
 int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
     ssize_t bytes_read = read(file_desc2, received_message, sizeof(received_message) - 1);
     if (bytes_read < 0) {
@@ -175,7 +212,6 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     }
     return new (shared_memory_ptr) SharedMemoryQueue();  
 }
-
 ChatHandler::~ChatHandler(){
     // Removes the shared memory block
     if (manuel && shared_memory_queue){
@@ -185,7 +221,6 @@ ChatHandler::~ChatHandler(){
     }
     shared_memory_queue = nullptr;
 }
-
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     size_t message_size = formatted_message.size() + 1; // null terminator included
 
