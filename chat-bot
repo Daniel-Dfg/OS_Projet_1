@@ -1,20 +1,20 @@
 #!/bin/bash
 
 # argv
-pseudo_recipient=$1
-pseudo_bot=$2
-extra=$3
-if [[ -z $pseudo_bot ]]; then
+pseudo_recipient="$1"
+pseudo_bot="$2"
+extra="$3"
+if [[ -z "$pseudo_bot" ]]; then
     pseudo_bot="bot"
 fi
 
 #conditions
 function error_handling(){
-    if [[ -z $pseudo_recipient ]]; then # TODO selon les consignes faire pour un number incorrect de parametre donc plus que 2 aussi?
+    if [[ -z "$pseudo_recipient" ]]; then # TODO selon les consignes faire pour un number incorrect de parametre donc plus que 2 aussi?
         echo "chat-bot destinataire [pseudo]"
         exit 1
     fi
-    if [[ -n $extra ]]; then
+    if [[ -n "$extra" ]]; then
         echo "WARNING: chat-bot takes one or 2 parametres not more"
     fi
 }
@@ -28,20 +28,20 @@ function bot_loop(){
 
 # responses
 function commands_responses(){
-    if [ "$*" == "liste" ]; then
-        ls
-    elif [ $1 == "li" ]; then
-        if [[ -f $2 && -n $2 ]]; then
-            cat $2
+    if [[ "$*" == "liste" ]]; then
+        echo $(ls)
+    elif [[ "$1" == "li" ]]; then
+        if [[ -f "$2" && -n "$2" ]]; then
+            echo $(cat "$2") # TODO echo each line as a response
         else
             echo "WARNING: File doesn't exist"
         fi
-    elif [ "$*" == "qui suis-je" ]; then
-        echo $pseudo_recipient
-    elif [ "$*" == "au revoir" ]; then
+    elif [[ "$*" == "qui suis-je" ]]; then
+        echo "$pseudo_recipient"
+    elif [[ "$*" == "au revoir" ]]; then
         exit 0
     else
-        check_liste_bot $1
+        check_liste_bot "$*"
     fi
 }
 
@@ -50,8 +50,8 @@ function check_liste_bot(){
     not_found=true
     while IFS= read -r line; do
         first_word=${line%% *}
-        if [ $first_word == $1 ]; then
-            echo ${line#* } # rest of the line
+        if [[ "$first_word" == "$*" ]]; then
+            echo "${line#* }" # rest of the line
             not_found=false
         fi
     done <liste-bot.txt
@@ -65,7 +65,7 @@ function check_liste_bot(){
 function main(){
     error_handling
     # PIPES stdout of chat = 0, stdin of chat = 1
-    coproc CHAT_PIPES { ./chat $pseudo_bot $pseudo_recipient --bot; }
+    coproc CHAT_PIPES { ./chat "$pseudo_bot" "$pseudo_recipient" --bot; }
 
     bot_loop ${CHAT_PIPES[0]} >&${CHAT_PIPES[1]}
 }
