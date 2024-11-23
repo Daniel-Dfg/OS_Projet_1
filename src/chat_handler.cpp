@@ -138,7 +138,6 @@ void ChatHandler::access_reception_channel(const string &sender) {
     }
     char received_message[BUFFER_SIZE];
     int bytes_read = 0;
-    bool first_message = true;
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
     do {
@@ -152,9 +151,9 @@ void ChatHandler::access_reception_channel(const string &sender) {
         else if (bytes_read > 0) {
             if (manuel && !bot) {
                 string formatted_message;
-                if (first_message){
+                if (shared_memory_queue->first_message){
                     formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
-                    first_message = false;
+                    shared_memory_queue->first_message = false;
                 } else{
                     formatted_message = received_message;
                 }
@@ -244,6 +243,7 @@ void ChatHandler::display_pending_messages() {
     if(shared_memory_queue){
         std::cout.write(shared_memory_queue->messages, shared_memory_queue->total_chars);
         shared_memory_queue->total_chars = 0;
+        shared_memory_queue->first_message = true;
     }
 }
 SharedMemoryQueue* ChatHandler::init_shared_memory_block(){

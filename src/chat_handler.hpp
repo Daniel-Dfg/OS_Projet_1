@@ -32,6 +32,7 @@ extern pid_t process;
 const size_t SHARED_MEMORY_SIZE = 4096;
 
 struct SharedMemoryQueue{
+    bool first_message = true;
     size_t total_chars = 0;
     char messages[SHARED_MEMORY_SIZE];
 };
