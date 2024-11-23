@@ -13,6 +13,8 @@
 #include <sys/types.h>
 #include <cstdio>
 
+pid_t process;
+
 
 int main(int argc, char* argv[]) {
 
@@ -39,16 +41,17 @@ int main(int argc, char* argv[]) {
     //ChatHandler chat = ChatHandler(*user1_name, *user2_name, bot, manuel);
     g_chat_handler = new ChatHandler(*user1_name, *user2_name, bot, manuel);
     
-    signal(SIGPIPE, Signal_Handler);
+    //signal(SIGPIPE, Signal_Handler);
 
     // Séparation en deux processus
-    int process = fork();
+    process = fork();
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
     if (process > 0) { // Père
         signal(SIGINT, Signal_Handler);  
         g_chat_handler->access_sending_channel(*user2_name);
     } else { // Fils
+        signal(SIGTERM, Signal_Handler);
         //signal(SIGINT, SIG_IGN); // SIGINT ignore par le second processus
         g_chat_handler->access_reception_channel(*user2_name);
     }
