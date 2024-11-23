@@ -88,37 +88,28 @@ void ChatHandler::access_reception_channel(const string &sender) {
         exit(EXIT_FAILURE);
     }
     char received_message[BUFFER_SIZE];
-    int bytes_read = 0;
+    int bytes_read;
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
-    do {
-        bytes_read = receive_message(received_message);
-        if (bytes_read < 0) {
-            this->error_log = "Erreur de lecture";
-            this->exit_code = EXIT_FAILURE;
-            cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
-        }
-        else if (bytes_read > 0) {
-            if (manuel && not bot) {
-                string formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
-                add_message_to_shared_memory(formatted_message);
-                pending_bytes += bytes_read;
-                std::cout<< "\a" << std::flush;
-            } else {
-                printf("[%s%s%s] %s\a", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
-                fflush(stdout);
-            }
-        }
-    } while (bytes_read >= 0);
 
-    if (bytes_read != 0) {
-        this->error_log = "Problème de lecture !";
-        this->exit_code = EXIT_FAILURE;
-        cerr << "Problème de lecture !" << endl;
-    } else {
-        this->error_log = "";
-        this->exit_code = EXIT_SUCCESS;
+    while ((bytes_read = receive_message(received_message)) > 0) {
+        if (manuel && not bot) {
+            string formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
+            add_message_to_shared_memory(formatted_message);
+            pending_bytes += bytes_read;
+            std::cout << "\a" << std::flush;
+        } else {
+            printf("[%s%s%s] %s\a", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+            fflush(stdout);
+        }
     }
+
+    if (bytes_read < 0) {
+        this->error_log = "Erreur de lecture";
+        this->exit_code = EXIT_FAILURE;
+        cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+    }
+
     close(file_desc2);
     exit(this->exit_code);
 }
@@ -161,7 +152,7 @@ void ChatHandler::display_pending_messages() {
 SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     // Autoriser les lectures et ecritures
     const int protection = PROT_READ | PROT_WRITE;
-    // Partager avec son/ses enfants 
+    // Partager avec son/ses enfants
     const int visibility = MAP_SHARED | MAP_ANONYMOUS;
     // Le fichier pas utilise
     const int fd = -1;
@@ -173,7 +164,7 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
         perror("mmap");
         exit(EXIT_FAILURE);
     }
-    return new (shared_memory_ptr) SharedMemoryQueue();  
+    return new (shared_memory_ptr) SharedMemoryQueue();
 }
 
 ChatHandler::~ChatHandler(){
