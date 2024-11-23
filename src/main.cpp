@@ -12,9 +12,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <cstdio>
+#include <csignal>
 
 pid_t process;
-
 
 int main(int argc, char* argv[]) {
 
@@ -23,17 +23,18 @@ int main(int argc, char* argv[]) {
 
     ExceptionHandler::process_args(argc, argv, bot, manuel);
     
+    
     struct sigaction action;
     action.sa_handler = Signal_Handler;
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     
-    if(sigaction(SIGINT, &action, NULL) < 0){
-        perror("sigaction()");
-    }
+    
     if(sigaction(SIGPIPE, &action, NULL) < 0){
         perror("sigaction() sigpipe");
     }
+    
+
 
     std::string* user1_name = new std::string(argv[1]);
     std::string* user2_name = new std::string(argv[2]);
@@ -48,10 +49,12 @@ int main(int argc, char* argv[]) {
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
     if (process > 0) { // Père
-        signal(SIGINT, Signal_Handler);  
+        if(sigaction(SIGINT, &action, NULL) < 0){
+            perror("sigaction()");
+        }
         g_chat_handler->access_sending_channel(*user2_name);
     } else { // Fils
-        signal(SIGTERM, Signal_Handler);
+        
         //signal(SIGINT, SIG_IGN); // SIGINT ignore par le second processus
         g_chat_handler->access_reception_channel(*user2_name);
     }

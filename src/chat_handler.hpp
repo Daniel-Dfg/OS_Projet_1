@@ -22,6 +22,7 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include "exception_handler.hpp"
 #include <fcntl.h>
 
+extern volatile sig_atomic_t signal_received;
 extern std::string g_path_from_user1;
 extern std::string g_path_from_user2;
 extern int g_file_desc1;
