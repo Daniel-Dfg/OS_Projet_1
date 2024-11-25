@@ -1,15 +1,21 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
+
+
 #include <cstdio>
 #include <fcntl.h>
 #include <iostream>
 #include <cstring>
+#include <signal.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <csignal>
 
 std::string g_path_from_user1;
 std::string g_path_from_user2;
 int g_file_desc1;
 int g_file_desc2;
+ChatHandler* g_chat_handler = nullptr;
 
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
@@ -44,7 +50,50 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
         ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
     }
 }
-
+void Signal_Handler(const int sig){
+    if (sig == SIGINT){
+        if (process > 0){
+            std::cout << "You closed the chat. sigint pere" << std::endl;
+            kill(process, SIGTERM);
+            close(g_file_desc1);
+            close(g_file_desc2);
+            unlink(g_path_from_user1.c_str());
+            unlink(g_path_from_user2.c_str());
+            exit(4);
+        }
+        else if (process == 0){
+        std::cout << "The other user closed the chat. Signal " << strsignal(sig) << " received." << std::endl;
+        }
+    }
+    else if (sig == SIGPIPE) {
+        if (process > 0){
+        printf("Closing the chat.. sigpipe\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+        }
+        // Close the fifo channels before removing the files
+        exit(4);
+    /*
+    else if (sig == SIGPIPE){
+        printf("The other user closed the chat. pipesig\n");
+        if (g_chat_handler && g_chat_handler->manuel){
+            g_chat_handler->display_pending_messages();
+        }
+        // Close the fifo channels before removing the files
+        close(g_file_desc1);
+        close(g_file_desc2);
+        std::remove(g_path_from_user1.c_str());
+        std::remove(g_path_from_user2.c_str());
+        exit(4);
+    }
+    else if (sig == SIGTERM){
+        printf("SIGTERM\n");
+        exit(4);
+    }
+    */
+    }
+}
 void ChatHandler::access_sending_channel(const string &recipient) {
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
     string sender = (recipient == user2_name) ? user1_name : user2_name;
@@ -79,8 +128,8 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     close(file_desc1);
     exit(this->exit_code);
 }
-
 void ChatHandler::access_reception_channel(const string &sender) {
+    signal(SIGPIPE, Signal_Handler);
     string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
     file_desc2 = open(path.c_str(), O_RDONLY);
     if (file_desc2 < 0) {
@@ -93,19 +142,26 @@ void ChatHandler::access_reception_channel(const string &sender) {
     string ansi_end = bot ? "" : "\x1B[0m";
     do {
         bytes_read = receive_message(received_message);
-        if (bytes_read < 0) {
+        if (bytes_read <= 0) {
             this->error_log = "Erreur de lecture";
             this->exit_code = EXIT_FAILURE;
             cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+            break;
         }
         else if (bytes_read > 0) {
-            if (manuel && not bot) {
-                string formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
+            if (manuel && !bot) {
+                string formatted_message;
+                if (shared_memory_queue->first_message){
+                    formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
+                    shared_memory_queue->first_message = false;
+                } else{
+                    formatted_message = received_message;
+                }
                 add_message_to_shared_memory(formatted_message);
                 pending_bytes += bytes_read;
                 std::cout<< "\a" << std::flush;
             } else {
-                printf("[%s%s%s] %s\a", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+                printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
                 fflush(stdout);
             }
         }
@@ -122,24 +178,52 @@ void ChatHandler::access_reception_channel(const string &sender) {
     close(file_desc2);
     exit(this->exit_code);
 }
-
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
     //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
-    if (fgets(message_to_send, sizeof(message_to_send), stdin) == NULL) {
+    /*
+    struct sigaction action;
+    action.sa_handler = Signal_Handler;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+
+    if (sigaction(SIGINT, &action, NULL) < 0) {
+        perror("sigaction() SIGINT");
+    }
+    if (sigaction(SIGTERM, &action, NULL) < 0) {
+        perror("sigaction() SIGTERM");
+    }
+    */
+    //if(FD_ISSET(STDIN_FILENO, &read_fds)){
+    char* input = fgets(message_to_send, sizeof(message_to_send), stdin);
+    if (input == NULL){
         if (feof(stdin)) {
             this->error_log = "End of input reached.";
             this->exit_code = EXIT_SUCCESS;
         } else if (ferror(stdin)) {
+            if (errno == SIGPIPE || errno == SIGINT){
+                std::cout << "Interrupted by signal, the other user closed the chat" << std::endl;
+                this->error_log = "Interrupted by signal, the other user closed the chat.";
+                this->exit_code = EXIT_FAILURE;
+                exit(4);
+            }else{
             this->error_log = "Error reading input: ";
             this->exit_code = EXIT_FAILURE;
-        }
+            }
+        }   
+        return -1;
     }
-    ssize_t bytes_written;
-    this-> exit_code ? bytes_written = -1 : bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
+    ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
+        if (bytes_written < 0){
+            if (errno == EPIPE) {
+                std::cerr << "Failed to send msg";
+                kill(process, SIGPIPE);
+                return -1;
+            }
+        }
+    //this-> exit_code ? bytes_written = -1 : bytes_written;
     return static_cast<int>(bytes_written);
 }
-
 int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
     ssize_t bytes_read = read(file_desc2, received_message, sizeof(received_message) - 1);
     if (bytes_read < 0) {
@@ -147,7 +231,10 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         return -1;
     }
     if (bytes_read == 0) {
-        return 0; // Fin de la conversation
+        std::cerr << "The other user has disconnected. \n";
+        kill(process, SIGPIPE);
+        return -1;
+        //exit(4); // Fin de la conversation
     }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);
@@ -156,6 +243,7 @@ void ChatHandler::display_pending_messages() {
     if(shared_memory_queue){
         std::cout.write(shared_memory_queue->messages, shared_memory_queue->total_chars);
         shared_memory_queue->total_chars = 0;
+        shared_memory_queue->first_message = true;
     }
 }
 SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
@@ -175,7 +263,6 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     }
     return new (shared_memory_ptr) SharedMemoryQueue();  
 }
-
 ChatHandler::~ChatHandler(){
     // Removes the shared memory block
     if (manuel && shared_memory_queue){
@@ -185,7 +272,6 @@ ChatHandler::~ChatHandler(){
     }
     shared_memory_queue = nullptr;
 }
-
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     size_t message_size = formatted_message.size() + 1; // null terminator included
 

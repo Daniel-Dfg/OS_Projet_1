@@ -20,15 +20,19 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include <iostream> 
 #include <memory>
 #include "exception_handler.hpp"
+#include <fcntl.h>
 
+extern volatile sig_atomic_t signal_received;
 extern std::string g_path_from_user1;
 extern std::string g_path_from_user2;
 extern int g_file_desc1;
 extern int g_file_desc2;
+extern pid_t process;
 
 const size_t SHARED_MEMORY_SIZE = 4096;
 
 struct SharedMemoryQueue{
+    bool first_message = true;
     size_t total_chars = 0;
     char messages[SHARED_MEMORY_SIZE];
 };
@@ -67,5 +71,9 @@ class ChatHandler{
     
     //
 };
+
+
+void Signal_Handler(const int sig);
+extern ChatHandler* g_chat_handler; // I was kinda obligated to do this..
 
 #endif // CHAT_HANDLER_HPP
