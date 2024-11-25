@@ -1,10 +1,5 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
-#include <cstdio>
-#include <fcntl.h>
-#include <iostream>
-#include <cstring>
-#include <unistd.h>
 
 std::string g_path_from_user1;
 std::string g_path_from_user2;
@@ -93,13 +88,16 @@ void ChatHandler::access_reception_channel(const string &sender) {
     string ansi_end = bot ? "" : "\x1B[0m";
 
     while ((bytes_read = receive_message(received_message)) > 0) {
-        if (manuel && not bot) {
+        if (manuel && !bot) {
             string formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
             add_message_to_shared_memory(formatted_message);
             pending_bytes += bytes_read;
             std::cout << "\a" << std::flush;
         } else {
-            printf("[%s%s%s] %s\a", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+            printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+            if (manuel){
+                printf("\a");
+            }
             fflush(stdout);
         }
     }

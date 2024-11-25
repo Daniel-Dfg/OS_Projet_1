@@ -4,8 +4,7 @@ OBJDIR  := $(TOPDIR)obj/
 BINDIR  := $(TOPDIR)
 NAME    := chat
 EXE     := $(BINDIR)$(NAME)
-#Added
-TEMP := $(TOPDIR)temp/
+TEMP    := $(TOPDIR)temp/
 
 SFILES  := cpp
 OFILES  := o
@@ -28,6 +27,7 @@ $(EXE): $(OBJECTS)
 	$(CC) $^ -o $@ $(LIBS)
 
 $(OBJDIR)%$(OFILES): $(SRCDIR)%$(SFILES)
+	@mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) $< -c -o $@
 
 clean:
