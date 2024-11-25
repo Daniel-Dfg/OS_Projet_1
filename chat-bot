@@ -11,7 +11,7 @@ fi
 #conditions
 function error_handling(){
     if [[ -z "$pseudo_recipient" ]]; then
-        echo "chat-bot destinataire [pseudo]"
+        >&2 echo "chat-bot destinataire [pseudo]"
         exit 1
     fi
     if [[ $extra -gt 2 ]]; then
