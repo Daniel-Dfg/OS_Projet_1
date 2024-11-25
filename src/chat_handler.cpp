@@ -161,7 +161,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
                 pending_bytes += bytes_read;
                 std::cout<< "\a" << std::flush;
             } else {
-                printf("[%s%s%s] %s\a", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
+                printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
                 fflush(stdout);
             }
         }
