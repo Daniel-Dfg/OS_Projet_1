@@ -99,6 +99,8 @@ void ChatHandler::access_sending_channel(const string &recipient) {
         this->error_log = "Conversation terminée par " + end_user;
         this->exit_code = EXIT_SUCCESS;
     }
+    close(ChatGlobals::g_file_desc1);
+    unlink(ChatGlobals::g_path_from_user1.c_str());
     exit(this->exit_code);
 }
 void ChatHandler::access_reception_channel(const string &sender) {
@@ -133,6 +135,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
         }
     } while (bytes_read > 0);
 
+    //Ce-ci est correct?
     if (bytes_read != 0) {
         this->error_log = "Problème de lecture !";
         this->exit_code = EXIT_FAILURE;
@@ -142,6 +145,8 @@ void ChatHandler::access_reception_channel(const string &sender) {
         this->exit_code = EXIT_SUCCESS;
     }
     kill(getppid(), SIGTERM);
+    close(ChatGlobals::g_file_desc1);
+    unlink(ChatGlobals::g_path_from_user1.c_str());
     exit(this->exit_code);
 }
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){

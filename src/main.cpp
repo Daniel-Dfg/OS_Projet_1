@@ -1,12 +1,7 @@
 #include "exception_handler.hpp"
 #include "chat_handler.hpp"
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <dirent.h>
 #include <signal.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 
 using namespace ChatGlobals;
 
@@ -34,11 +29,10 @@ int main(int argc, char* argv[]) {
         ChatGlobals::g_chat_handler->access_sending_channel(*user2_name);
 
     } else { // Fils
-
         signal(SIGINT, SIG_IGN);
         ChatGlobals::g_chat_handler->access_reception_channel(*user2_name);
     }
-
+    // Il ne sont meme pas pris en compte
     delete ChatGlobals::g_chat_handler;
     delete user1_name;
     delete user2_name;
