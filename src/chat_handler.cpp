@@ -1,15 +1,12 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
 
-
 #include <cstdio>
+#include <cstdlib>
 #include <fcntl.h>
-#include <iostream>
-#include <cstring>
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <csignal>
 
 namespace ChatGlobals {
     string g_path_from_user1;
@@ -17,7 +14,6 @@ namespace ChatGlobals {
     int g_file_desc1;
     int g_file_desc2;
     ChatHandler* g_chat_handler = nullptr;
-
 }
 using namespace ChatGlobals;
 
@@ -48,11 +44,9 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     }
     // Create Named Pipes (FIFO)
     if (file_desc1 < 0) {
-        std::cout << "Le probleme c ici file_desc1" << std::endl;
         ExceptionHandler::return_code_check(mkfifo(path_from_user1.c_str(), FIFO_PERMISSION));
     }
     if (file_desc2 < 0) {
-        std::cout << "Le probleme c ici file_desc2" << std::endl;
         ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
     }
 }
@@ -64,30 +58,23 @@ void Signal_Handler(const int sig){
         else{
             std::cout << "You closed the chat. sigint pere" << std::endl;
             close(g_file_desc1);
-            close(g_file_desc2);
             unlink(ChatGlobals::g_path_from_user1.c_str());
-            unlink(ChatGlobals::g_path_from_user2.c_str());
-            //kill(0, SIGTERM);  // Terminate both parent and child? This or not?
             exit(4);
         }
-
     }
-    else if(sig == SIGTERM) {
-        std::cout << "Chat closed gracefully (SIGTERM)." << std::endl;
-        close(g_file_desc1);
-        close(g_file_desc2);
-        unlink(g_path_from_user1.c_str());
-        unlink(g_path_from_user2.c_str());
-        exit(4);
+    if (sig == SIGTERM){
+        exit(0);
     }
 }
 void ChatHandler::access_sending_channel(const string &recipient) {
+    signal(SIGTERM, Signal_Handler);
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
     string sender = (recipient == user2_name) ? user1_name : user2_name;
     char message_to_send[BUFFER_SIZE];
     int bytes_written;
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
+
     file_desc1 = open(path.c_str(), O_WRONLY);
     if (file_desc1 == -1) {
         perror("open");
@@ -112,7 +99,6 @@ void ChatHandler::access_sending_channel(const string &recipient) {
         this->error_log = "Conversation terminée par " + end_user;
         this->exit_code = EXIT_SUCCESS;
     }
-    close(file_desc1);
     exit(this->exit_code);
 }
 void ChatHandler::access_reception_channel(const string &sender) {
@@ -155,31 +141,17 @@ void ChatHandler::access_reception_channel(const string &sender) {
         this->error_log = "";
         this->exit_code = EXIT_SUCCESS;
     }
-    close(file_desc2);
+    kill(getppid(), SIGTERM);
     exit(this->exit_code);
 }
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
     //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
-    /*
-    struct sigaction action;
-    action.sa_handler = Signal_Handler;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-
-    if (sigaction(SIGINT, &action, NULL) < 0) {
-        perror("sigaction() SIGINT");
-    }
-    if (sigaction(SIGTERM, &action, NULL) < 0) {
-        perror("sigaction() SIGTERM");
-    }
-    */
     char* input = fgets(message_to_send, sizeof(message_to_send), stdin);
     if (input == NULL){
         if (feof(stdin)) {
             this->error_log = "EOF reached. You closed the chat.";
             this->exit_code = EXIT_SUCCESS;
-            kill(0, SIGTERM);
             return 0;
         }
         else if (ferror(stdin)) {
@@ -204,7 +176,6 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         return -1;
     }
     if (bytes_read == 0) {
-        kill(0, SIGTERM);
         return -1;
     }
     received_message[bytes_read] = '\0'; // Null-terminate the string
