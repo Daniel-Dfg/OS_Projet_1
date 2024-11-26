@@ -1,4 +1,5 @@
 //C++
+#include <csignal>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -131,25 +132,22 @@ int main(int argc, char* argv[]) {
     const mode_t FIFO_PREMISSION = 0666;
     const mode_t FOLDER_PREMISSON = 0777;
 
-
-    // Dossier temp
-    DIR * temp = opendir("temp");
-    if (temp){stupid_error_check(closedir(temp));}
-    else{stupid_error_check(mkdir("temp", FOLDER_PREMISSON));} // création du dossier temp
+    // Dossier tmp
+    DIR * tmp = opendir("tmp");
+    if (tmp){stupid_error_check(closedir(tmp));}
+    else{stupid_error_check(mkdir("tmp", FOLDER_PREMISSON));} // création du dossier tmp
 
     // Initialisé les path FIFO
-    string path_1 = "temp/" + user1_name +"_"+ user2_name +".chat";
-    string path_2 = "temp/" + user2_name + "_" + user1_name + ".chat";
+    string path_1 = "tmp/" + user1_name +"_"+ user2_name +".chat";
+    string path_2 = "tmp/" + user2_name + "_" + user1_name + ".chat";
 
     //Initialisé file discriptor
-    int fd1 = open(path_1.c_str(), O_PATH);
-    int fd2 = open(path_2.c_str(), O_PATH);
+    int fd1 = access(path_1.c_str(), F_OK);
+    int fd2 = access(path_2.c_str(), F_OK);
 
     // Création Named Pipes (FIFO)
     if (fd1 < 0){stupid_error_check(mkfifo(path_1.c_str(), FIFO_PREMISSION));}
     if (fd2 < 0){stupid_error_check(mkfifo(path_2.c_str(), FIFO_PREMISSION));}
-    close(fd1);
-    close(fd2);
 
     // Speration en deux processus
     int process = fork();
@@ -158,13 +156,10 @@ int main(int argc, char* argv[]) {
     // Faut avoir 2 terminal (terminal1:./chat A B, terminal2:./chat B A)
     if (process > 0){//Processus original
         signal(SIGINT, signal_handler); //TODO signal pour toutes les situation
-
         char message_to_send[80];
-        while (1) {
-            fd1 = open(path_1.c_str(), O_WRONLY);
-            fgets(message_to_send, sizeof(message_to_send), stdin);
+        fd1 = open(path_1.c_str(), O_WRONLY);
+        while (fgets(message_to_send, sizeof(message_to_send), stdin) != NULL) {
             write(fd1, message_to_send,sizeof(message_to_send));
-            close(fd1);
         }
     }
     else {// processus secondaire
@@ -180,12 +175,14 @@ int main(int argc, char* argv[]) {
         }
 
         char recived_message[80];
-        while (1) {
-            fd2 = open(path_2.c_str(), O_RDONLY);
-            read(fd2, recived_message, sizeof(recived_message));
+        fd2 = open(path_2.c_str(), O_RDONLY);
+        while (read(fd2, recived_message, sizeof(recived_message)) > 0) {
             printf("[%s%s%s] %s",ansi_begining.c_str(), user2_name.c_str(), ansi_end.c_str(), recived_message);
-            close(fd2);
         }
     }
+    close(fd1);
+    close(fd2);
+    unlink(path_1.c_str());
+    unlink(path_2.c_str());
     return 0;
 }
