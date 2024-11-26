@@ -29,10 +29,14 @@ int main(int argc, char* argv[]) {
     sigemptyset(&action.sa_mask);
     action.sa_flags = 0;
     
-    
+    /*
     if(sigaction(SIGPIPE, &action, NULL) < 0){
         perror("sigaction() sigpipe");
     }
+    */
+    signal(SIGINT, Signal_Handler);   // Handle SIGINT for both modes
+
+    signal(SIGPIPE, SIG_IGN);
     
 
 
@@ -49,9 +53,12 @@ int main(int argc, char* argv[]) {
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
     // Il faut avoir 2 terminaux (terminal1: ./chat A B, terminal2: ./chat B A par ex.)
     if (process > 0) { // Père
+        /*
         if(sigaction(SIGINT, &action, NULL) < 0){
             perror("sigaction()");
         }
+        */
+        signal(SIGINT, Signal_Handler);
         g_chat_handler->access_sending_channel(*user2_name);
     } else { // Fils
         
