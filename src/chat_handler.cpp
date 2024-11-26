@@ -11,12 +11,15 @@
 #include <fcntl.h>
 #include <csignal>
 
-std::string g_path_from_user1;
-std::string g_path_from_user2;
-int g_file_desc1;
-int g_file_desc2;
-ChatHandler* g_chat_handler = nullptr;
+namespace ChatGlobals {
+    string g_path_from_user1;
+    string g_path_from_user2;
+    int g_file_desc1;
+    int g_file_desc2;
+    ChatHandler* g_chat_handler = nullptr;
 
+}
+using namespace ChatGlobals;
 
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
@@ -45,36 +48,30 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     }
     // Create Named Pipes (FIFO)
     if (file_desc1 < 0) {
-        std::cout << 'Le probleme c ici file_desc1';
+        std::cout << "Le probleme c ici file_desc1" << std::endl;
         ExceptionHandler::return_code_check(mkfifo(path_from_user1.c_str(), FIFO_PERMISSION));
     }
     if (file_desc2 < 0) {
-        std::cout << 'Le probleme c ici file_desc2';
+        std::cout << "Le probleme c ici file_desc2" << std::endl;
         ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
     }
 }
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
-        
-        if (g_chat_handler->manuel){
-            signal(SIGINT, SIG_IGN);
-            std::cout << "I am here" << std::endl;
-            g_chat_handler->display_pending_messages();
-            return;
+        if (ChatGlobals::g_chat_handler->manuel){
+            ChatGlobals::g_chat_handler->display_pending_messages();
         }
-        if (process > 0 && !g_chat_handler->manuel){
+        else{
             std::cout << "You closed the chat. sigint pere" << std::endl;
             close(g_file_desc1);
             close(g_file_desc2);
-            unlink(g_path_from_user1.c_str());
-            unlink(g_path_from_user2.c_str());
-            kill(0, SIGTERM);  // Terminate both parent and child
+            unlink(ChatGlobals::g_path_from_user1.c_str());
+            unlink(ChatGlobals::g_path_from_user2.c_str());
+            //kill(0, SIGTERM);  // Terminate both parent and child? This or not?
             exit(4);
         }
         
     }
-        
-    
     else if(sig == SIGTERM) {
         std::cout << "Chat closed gracefully (SIGTERM)." << std::endl;
         close(g_file_desc1);
@@ -111,7 +108,6 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     if (bytes_written < 0) {
         cerr << "Erreur en écriture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
     } else if (bytes_written == 0) {
-        signal(SIGINT, Signal_Handler);
         string end_user = (path == path_from_user1) ? user1_name : user2_name;
         this->error_log = "Conversation terminée par " + end_user;
         this->exit_code = EXIT_SUCCESS;
@@ -120,7 +116,6 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     exit(this->exit_code);
 }
 void ChatHandler::access_reception_channel(const string &sender) {
-    //signal(SIGPIPE, Signal_Handler);
     string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
     file_desc2 = open(path.c_str(), O_RDONLY);
     if (file_desc2 < 0) {
@@ -137,10 +132,6 @@ void ChatHandler::access_reception_channel(const string &sender) {
             this->error_log = "Erreur de lecture";
             this->exit_code = EXIT_FAILURE;
             cerr << "Erreur en lecture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
-            break;
-        }
-        else if(bytes_read == 0) {
-            kill(process, SIGPIPE);
             break;
         }
         else if (bytes_read > 0) {
@@ -202,12 +193,8 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     }   
     
     ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
-    if (bytes_written < 0 && errno == EPIPE) {
-        std::cerr << "Failed to send message: broken pipe." << std::endl;
-        kill(0, SIGTERM);  // Send SIGTERM to close both chats
-        return -1;
-    }
-    //this-> exit_code ? bytes_written = -1 : bytes_written;
+    
+    this-> exit_code ? bytes_written = -1 : bytes_written;
     return static_cast<int>(bytes_written);
 }
 int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
@@ -217,12 +204,8 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         return -1;
     }
     if (bytes_read == 0) {
-        
-        // I need to know which signal is received so I can treat them differently here.
-
         kill(0, SIGTERM);
-        //return -1;
-        //exit(4); // Fin de la conversation
+        return -1;
     }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);

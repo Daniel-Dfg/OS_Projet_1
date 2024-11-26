@@ -22,11 +22,14 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include "exception_handler.hpp"
 #include <fcntl.h>
 
-extern std::string g_path_from_user1;
-extern std::string g_path_from_user2;
-extern int g_file_desc1;
-extern int g_file_desc2;
-extern pid_t process;
+class ChatHandler;
+namespace ChatGlobals {
+    extern string g_path_from_user1;
+    extern string g_path_from_user2;
+    extern int g_file_desc1;
+    extern int g_file_desc2;
+    extern ChatHandler* g_chat_handler;
+}
 
 const size_t SHARED_MEMORY_SIZE = 4096;
 
