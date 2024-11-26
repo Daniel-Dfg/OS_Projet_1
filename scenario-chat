@@ -6,14 +6,14 @@ FIFODIR=$(mktemp -d)
 PIPE="$FIFODIR/scenario-pipe"
 mkfifo "$PIPE"
 
-./chat "$1" "$2" ${@:4:2} < "$PIPE" &
+./chat "$1" "$2" ${@:5:2} < "$PIPE" &
 CHAT_PID=$!
 
 while IFS= read -r ligne; do
-   sleep 1.5
+   sleep 2
    trimmed="$(tr -d '\n' <<< "$ligne")"
    if [[ "$trimmed" == "*" ]] ; then
-      sleep 1
+      sleep "$4"
    elif [[ "$trimmed" == "^" ]] ; then
       kill -s SIGINT "$CHAT_PID"
    elif [[ "$trimmed" == "-" ]] ; then

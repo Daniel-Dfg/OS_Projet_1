@@ -7,10 +7,25 @@ declare -i TEST_TOTAL=0
 echo "Démarrage des tests. Ceux-ci peuvent prendre quelques secondes pour éviter les aléas des accès concurrents."
 
 LOG=0
-if [[ "$1" == "--log" ]]; then
-   LOG=1
-fi
+DUREE=1
+
+while (( "$#" )); do
+   case $1 in
+      --log) # display Help
+         LOG=1
+         ;;
+      -t) # Enter a name
+         shift
+         if [[ -n "$1" ]]; then
+            DUREE="$1"
+         fi
+   esac
+
+   shift
+done
+
 export LOG
+export DUREE
 
 echo -e "\t === Tests mode simple ===\n"
 
@@ -63,13 +78,13 @@ fi
 function tester_scenario() {
    N=$1
    TEST_TOTAL=$2
-   
+
    fichier_resultat="$(mktemp)"
    echo -e "\x1B[0;90mFichier temporaire '$fichier_resultat' créé.\x1B[0m"
 
-   ./scenario-chat alice bob "scenarios/$N/discussion-alice.txt" &>/dev/null &
-   ./scenario-chat bob alice "scenarios/$N/discussion-bob.txt" ${@:3:2} \
-      | sed -e 's/\x1B\[[^m]\+m\|\x1B\[0m//g' -e 's/\a//g' \
+   ./scenario-chat alice bob "scenarios/$N/discussion-alice.txt" "$DUREE" &>/dev/null &
+   ./scenario-chat bob alice "scenarios/$N/discussion-bob.txt" "$DUREE" ${@:3:2} \
+      | perl -pe 's/\x1B\[[0-9;]*m//g' | perl -pe 's/\a//g' \
       > "$fichier_resultat"
 
    if cmp -s "$fichier_resultat" "scenarios/$N/discussion-stdout.txt" ; then
@@ -86,13 +101,13 @@ function tester_scenario() {
       echo -e "\x1B[0;90mFichier temporaire '$fichier_resultat' supprimé.\x1B[0m"
       rm "$fichier_resultat"
    fi
-   
+
    return $CODE_RETOUR
 }
 function tester_scenario_bot() {
    N=$1
    TEST_TOTAL=$2
-   
+
    if [[ $# -gt 3 ]]; then
       ./chat-bot alice "$3" &>/dev/null &
       PSEUDO_BOT="$3"
@@ -100,12 +115,12 @@ function tester_scenario_bot() {
       ./chat-bot alice &>/dev/null &
       PSEUDO_BOT="bot"
    fi
-   
+
    fichier_resultat="$(mktemp)"
    echo -e "\x1B[0;90mFichier temporaire '$fichier_resultat' créé.\x1B[0m"
 
-   ./scenario-chat alice "$PSEUDO_BOT" "scenarios/$N/discussion-alice.txt" --bot \
-      | sed -e 's/\x1B\[[^m]\+m\|\x1B\[0m//g' -e 's/\a//g' \
+   ./scenario-chat alice "$PSEUDO_BOT" "scenarios/$N/discussion-alice.txt" "$DUREE" --bot \
+      | perl -pe 's/\x1B\[[0-9;]*m//g' | perl -pe 's/\a//g' \
       > "$fichier_resultat"
 
    if cmp -s "$fichier_resultat" "scenarios/$N/discussion-stdout.txt" ; then
@@ -122,12 +137,12 @@ function tester_scenario_bot() {
       echo -e "\x1B[0;90mFichier temporaire '$fichier_resultat' supprimé.\x1B[0m"
       rm "$fichier_resultat"
    fi
-   
+
    return $CODE_RETOUR
 }
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (discussion sans options)... "
+echo "Test #$TEST_TOTAL [scenario 1] (discussion sans options)... "
 if tester_scenario 1 "$TEST_TOTAL" ; then
    TEST_SUCCESS+=1
 fi
@@ -135,25 +150,25 @@ fi
 echo -e "\t\n === Tests avec modes manuel & bot ===\n"
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (discussion --manuel & ENTER)... "
+echo "Test #$TEST_TOTAL [scenario 2] (discussion --manuel & ENTER)... "
 if tester_scenario 2 "$TEST_TOTAL" --manuel ; then
    TEST_SUCCESS+=1
 fi
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (discussion --manuel & Ctrl + C)... "
+echo "Test #$TEST_TOTAL [scenario 3] (discussion --manuel & Ctrl + C)... "
 if tester_scenario 3 "$TEST_TOTAL" --manuel ; then
    TEST_SUCCESS+=1
 fi
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (--bot)... "
+echo "Test #$TEST_TOTAL [scenario 5] (--bot)... "
 if tester_scenario 5 "$TEST_TOTAL" --bot ; then
    TEST_SUCCESS+=1
 fi
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (--bot --manuel)... "
+echo "Test #$TEST_TOTAL [scenario 6] (--bot --manuel)... "
 if tester_scenario 6 "$TEST_TOTAL" --bot --manuel ; then
    TEST_SUCCESS+=1
 fi
@@ -176,20 +191,20 @@ else
 fi
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (bot mots à compléter et inexistants)... "
+echo "Test #$TEST_TOTAL [scenario 7] (bot mots à compléter et inexistants)... "
 if tester_scenario_bot 7 "$TEST_TOTAL" ; then
    TEST_SUCCESS+=1
 fi
 
 TEST_TOTAL+=1
-echo "Test #$TEST_TOTAL (même que précédent mais avec un nom 'robot')... "
+echo "Test #$TEST_TOTAL [scenario 7] (même que précédent mais avec un nom 'robot')... "
 if tester_scenario_bot 7 "$TEST_TOTAL" "robot" ; then
    TEST_SUCCESS+=1
 fi
 
 
 TEST_TOTAL+=1
-echo -n "Test #$TEST_TOTAL (test de commandes)... "
+echo "Test #$TEST_TOTAL [scenario 8] (test de commandes)... "
 if tester_scenario_bot 8 "$TEST_TOTAL" ; then
    TEST_SUCCESS+=1
 fi
