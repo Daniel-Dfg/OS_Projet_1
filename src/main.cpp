@@ -1,5 +1,6 @@
 //C++
 #include <csignal>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include <unordered_map>
@@ -13,6 +14,7 @@
 #include <sys/shm.h> //TODO => avant fork
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 using std::cout, std::string, std::cerr, std::unordered_map, std::endl, std::unordered_set;
 //TODO : à voir si on met le namespace dans un hpp, et si on rajoute des fichiers. Il faudra relire les consignes à ce sujet.
@@ -85,15 +87,11 @@ void display_warning(string &&warning_message){
     cout << "WARNING : " << warning_message << endl;
 }
 
-void stupid_error_check(int error){ // TODO a changé
-    // Error si "error" est -1
-    if (error < 0){
-        std::cout << "error\n";
-        exit(1);
-    }
-}
 
 void signal_handler(int sig){ // TODO a changé
+    if (sig == SIGPIPE){
+        printf("DIE PIPE");
+    }
     exit(0);
 }
 
@@ -131,11 +129,10 @@ int main(int argc, char* argv[]) {
     //les constants
     const mode_t FIFO_PREMISSION = 0666;
     const mode_t FOLDER_PREMISSON = 0777;
-
     // Dossier tmp
     DIR * tmp = opendir("tmp");
-    if (tmp){stupid_error_check(closedir(tmp));}
-    else{stupid_error_check(mkdir("tmp", FOLDER_PREMISSON));} // création du dossier tmp
+    if (tmp){(closedir(tmp));}
+    else{(mkdir("tmp", FOLDER_PREMISSON));} // création du dossier tmp
 
     // Initialisé les path FIFO
     string path_1 = "tmp/" + user1_name +"_"+ user2_name +".chat";
@@ -146,9 +143,10 @@ int main(int argc, char* argv[]) {
     int fd2 = access(path_2.c_str(), F_OK);
 
     // Création Named Pipes (FIFO)
-    if (fd1 < 0){stupid_error_check(mkfifo(path_1.c_str(), FIFO_PREMISSION));}
-    if (fd2 < 0){stupid_error_check(mkfifo(path_2.c_str(), FIFO_PREMISSION));}
-
+    if (fd1 < 0){mkfifo(path_1.c_str(), FIFO_PREMISSION);}
+    if (fd2 < 0){mkfifo(path_2.c_str(), FIFO_PREMISSION);}
+    signal(SIGPIPE, signal_handler);
+    signal(SIGTERM, signal_handler);
     // Speration en deux processus
     int process = fork();
 
@@ -160,10 +158,12 @@ int main(int argc, char* argv[]) {
         fd1 = open(path_1.c_str(), O_WRONLY);
         while (fgets(message_to_send, sizeof(message_to_send), stdin) != NULL) {
             write(fd1, message_to_send,sizeof(message_to_send));
+            printf("[%s] %s", user1_name.c_str(), message_to_send);
         }
+        //printf("BYE DADY %s \n", path_1.c_str());
     }
     else {// processus secondaire
-
+        signal(SIGINT,SIG_IGN);
         // ANSI
         string ansi_begining = "\x1B[4m";
         string ansi_end = "\x1B[0m";
@@ -173,16 +173,16 @@ int main(int argc, char* argv[]) {
             ansi_begining = "";
             ansi_end = "";
         }
-
         char recived_message[80];
         fd2 = open(path_2.c_str(), O_RDONLY);
         while (read(fd2, recived_message, sizeof(recived_message)) > 0) {
             printf("[%s%s%s] %s",ansi_begining.c_str(), user2_name.c_str(), ansi_end.c_str(), recived_message);
+            fflush(stdout);
         }
+        //printf("ByeChild %s \n", path_1.c_str());
+        kill(getppid(), SIGTERM);
     }
     close(fd1);
-    close(fd2);
     unlink(path_1.c_str());
-    unlink(path_2.c_str());
     return 0;
 }
