@@ -20,16 +20,16 @@ ChatHandler* g_chat_handler = nullptr;
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
     // Tout initialiser
-    DIR *temp = opendir("temp");
-    if (temp) {
-        ExceptionHandler::return_code_check(closedir(temp));
+    DIR *tmp = opendir("tmp");
+    if (tmp) {
+        ExceptionHandler::return_code_check(closedir(tmp));
     } else {
-        ExceptionHandler::return_code_check(mkdir("temp", FOLDER_PERMISSION));
+        ExceptionHandler::return_code_check(mkdir("tmp", FOLDER_PERMISSION));
     }
 
     // Initialize FIFO paths
-    path_from_user1 = "temp/" + user1_name + "_" + user2_name + ".chat";
-    path_from_user2 = "temp/" + user2_name + "_" + user1_name + ".chat";
+    path_from_user1 = "tmp/" + user1_name + "_" + user2_name + ".chat";
+    path_from_user2 = "tmp/" + user2_name + "_" + user1_name + ".chat";
     g_path_from_user1 = path_from_user1;
     g_path_from_user2 = path_from_user2;
 
@@ -210,7 +210,7 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
             this->error_log = "Error reading input: ";
             this->exit_code = EXIT_FAILURE;
             }
-        }   
+        }
         return -1;
     }
     ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
@@ -249,7 +249,7 @@ void ChatHandler::display_pending_messages() {
 SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     // Autoriser les lectures et ecritures
     const int protection = PROT_READ | PROT_WRITE;
-    // Partager avec son/ses enfants 
+    // Partager avec son/ses enfants
     const int visibility = MAP_SHARED | MAP_ANONYMOUS;
     // Le fichier pas utilise
     const int fd = -1;
@@ -261,7 +261,7 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
         perror("mmap");
         exit(EXIT_FAILURE);
     }
-    return new (shared_memory_ptr) SharedMemoryQueue();  
+    return new (shared_memory_ptr) SharedMemoryQueue();
 }
 ChatHandler::~ChatHandler(){
     // Removes the shared memory block
