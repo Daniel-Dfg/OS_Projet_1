@@ -9,10 +9,6 @@
 #include <fcntl.h>
 
 namespace ChatGlobals {
-    string g_path_from_user1;
-    string g_path_from_user2;
-    int g_file_desc1;
-    int g_file_desc2;
     ChatHandler* g_chat_handler = nullptr;
 }
 using namespace ChatGlobals;
@@ -34,14 +30,10 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     // Initialize FIFO paths
     path_from_user1 = "tmp/" + user1_name + "_" + user2_name + ".chat";
     path_from_user2 = "tmp/" + user2_name + "_" + user1_name + ".chat";
-    g_path_from_user1 = path_from_user1;
-    g_path_from_user2 = path_from_user2;
 
     // Initialize file descriptors
     file_desc1 = access(path_from_user1.c_str(), F_OK);
     file_desc2 = access(path_from_user2.c_str(), F_OK);
-    g_file_desc1 = file_desc1;
-    g_file_desc2 = file_desc2;
 
     if (manuel){
         shared_memory_queue = init_shared_memory_block();
@@ -65,8 +57,6 @@ void Signal_Handler(const int sig){
         }
         else{
             std::cout << "You closed the chat. sigint pere" << std::endl;
-            close(g_file_desc1);
-            unlink(ChatGlobals::g_path_from_user1.c_str());
             exit(4);
         }
     }
@@ -235,8 +225,8 @@ ChatHandler::~ChatHandler(){
         }
     }
     shared_memory_queue = nullptr;
-    close(g_file_desc1);
-    close(g_file_desc2);
-    unlink(g_path_from_user1.c_str());
-    unlink(g_path_from_user2.c_str());
+    close(file_desc1);
+    close(file_desc2);
+    unlink(path_from_user1.c_str());
+    unlink(path_from_user2.c_str());
 }
