@@ -7,6 +7,9 @@ EXE     := $(BINDIR)$(NAME)
 #Added
 TMP := $(TOPDIR)tmp/
 
+# Added
+$(shell if [ ! -d "obj" ]; then mkdir "obj" ; fi )
+
 SFILES  := cpp
 OFILES  := o
 # Added
@@ -17,6 +20,7 @@ LIBS    := -fsanitize=address,undefined
 
 SOURCES := $(shell find $(SRCDIR) -name "*.$(SFILES)")
 OBJECTS := $(patsubst $(SRCDIR)%.$(SFILES), $(OBJDIR)%.$(OFILES), $(SOURCES))
+
 
 ALLFILES := $(SOURCES)
 
