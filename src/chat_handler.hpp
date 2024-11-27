@@ -12,19 +12,21 @@ Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
 #include <fcntl.h>
 #include <unistd.h>
 #include <dirent.h>
-#include <signal.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <cstring>
-#include <iostream> 
-#include <memory>
 #include "exception_handler.hpp"
+#include <fcntl.h>
 
-extern std::string g_path_from_user1;
-extern std::string g_path_from_user2;
-extern int g_file_desc1;
-extern int g_file_desc2;
+class ChatHandler;
+namespace ChatGlobals {
+    extern string g_path_from_user1;
+    extern string g_path_from_user2;
+    extern int g_file_desc1;
+    extern int g_file_desc2;
+    extern ChatHandler* g_chat_handler;
+}
 
 const size_t SHARED_MEMORY_SIZE = 4096;
 
@@ -40,7 +42,7 @@ class ChatHandler{
     static const mode_t FIFO_PERMISSION = 0666;
     static const mode_t FOLDER_PERMISSION = 0777;
     static const short unsigned int BUFFER_SIZE = 1024;
-    
+
     string error_log; //utilisé pour stocker une éventuelle erreur dans le chat
     int exit_code = 0;
 
@@ -64,8 +66,12 @@ class ChatHandler{
     //
     void display_pending_messages();
     void add_message_to_shared_memory(const string& formatted_message);
-    
+
     //
 };
+
+
+void Signal_Handler(const int sig);
+extern ChatHandler* g_chat_handler; // I was kinda obligated to do this..
 
 #endif // CHAT_HANDLER_HPP

@@ -4,7 +4,10 @@ OBJDIR  := $(TOPDIR)obj/
 BINDIR  := $(TOPDIR)
 NAME    := chat
 EXE     := $(BINDIR)$(NAME)
-TEMP    := $(TOPDIR)temp/
+#Added
+TMP := $(TOPDIR)tmp/
+# Added
+$(shell if [ ! -d "obj" ]; then mkdir "obj" ; fi )
 
 SFILES  := cpp
 OFILES  := o
@@ -16,6 +19,7 @@ LIBS    := -fsanitize=address,undefined
 
 SOURCES := $(shell find $(SRCDIR) -name "*.$(SFILES)")
 OBJECTS := $(patsubst $(SRCDIR)%.$(SFILES), $(OBJDIR)%.$(OFILES), $(SOURCES))
+
 
 ALLFILES := $(SOURCES)
 
@@ -31,4 +35,4 @@ $(OBJDIR)%$(OFILES): $(SRCDIR)%$(SFILES)
 	$(CC) $(CFLAGS) $< -c -o $@
 
 clean:
-	@rm -rf $(OBJECTS) $(EXE) $(TEMP)
+	@rm -rf $(OBJECTS) $(EXE) $(TMP)
