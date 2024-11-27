@@ -10,7 +10,7 @@ void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){ //dev
     auto it = EXIT_CODE_MESSAGES.find(exit_code);
 
     if(it == EXIT_CODE_MESSAGES.end()){
-         cerr << "Erreur inconnue, code " << exit_code << endl;
+        cerr << "Erreur inconnue, code " << exit_code << endl;
      }
     else {
         cerr << it->second << endl;
@@ -52,8 +52,8 @@ void ExceptionHandler::check_username_validity(vector<string> &usernames){
 void ExceptionHandler::return_code_check(int error) { // TODO a changé
     // Error si "error" est -1
     if (error < 0) {
-        std::cout << "error\n";
-        exit(error);
+        std::cerr << "error: " << strerror(errno) << std::endl;
+        //exit(error);
     }
 }
 

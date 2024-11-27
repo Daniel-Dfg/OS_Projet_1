@@ -75,6 +75,5 @@ class ChatHandler{
 
 
 void Signal_Handler(const int sig);
-extern ChatHandler* g_chat_handler; // I was kinda obligated to do this..
 
 #endif // CHAT_HANDLER_HPP

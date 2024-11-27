@@ -38,8 +38,8 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     g_path_from_user2 = path_from_user2;
 
     // Initialize file descriptors
-    file_desc1 = access(path_from_user1.c_str(), F_OK);
-    file_desc2 = access(path_from_user2.c_str(), F_OK);
+    file_desc1 = open(path_from_user1.c_str(), O_RDWR | O_CREAT, 0666);
+    file_desc2 = open(path_from_user2.c_str(), O_RDWR | O_CREAT, 0666);
     g_file_desc1 = file_desc1;
     g_file_desc2 = file_desc2;
 
@@ -59,6 +59,8 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
         if (ChatGlobals::g_chat_handler->manuel){
+            signal(SIGINT, SIG_IGN);
+            std::cout << "I am here" << std::endl;
             ChatGlobals::g_chat_handler->display_pending_messages();
         }
         else{
@@ -241,6 +243,22 @@ ChatHandler::~ChatHandler(){
         }
     }
     shared_memory_queue = nullptr;
+
+    // Close file descriptors
+    if (file_desc1 != -1) {
+        close(file_desc1);
+    }
+    if (file_desc2 != -1) {
+        close(file_desc2);
+    }
+
+    // Unlink FIFO files
+    if (!path_from_user1.empty()) {
+        unlink(path_from_user1.c_str());
+    }
+    if (!path_from_user2.empty()) {
+        unlink(path_from_user2.c_str());
+    }
 }
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     size_t message_size = formatted_message.size() + 1; // null terminator included
