@@ -69,7 +69,7 @@ void Signal_Handler(const int sig){
             close(g_file_desc2);
             unlink(ChatGlobals::g_path_from_user1.c_str());
             unlink(ChatGlobals::g_path_from_user2.c_str());
-            //kill(0, SIGTERM);  // Terminate both parent and child? This or not?
+            kill(0, SIGTERM);  // Terminate both parent and child? This or not?
             exit(4);
         }
         
@@ -91,6 +91,8 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
     file_desc1 = open(path.c_str(), O_WRONLY);
+    std::cout << "Alice is sending: " << message_to_send << std::endl;
+
     if (file_desc1 == -1) {
         perror("open");
         return; // Sortir de la fonction si l'ouverture a échoué
@@ -125,6 +127,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
         exit(EXIT_FAILURE);
     }
     char received_message[BUFFER_SIZE];
+    std::cout << "Bob is receiving: " << received_message << std::endl;
     int bytes_read = 0;
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
@@ -181,7 +184,7 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
         if (feof(stdin)) {
             this->error_log = "EOF reached. You closed the chat.";
             this->exit_code = EXIT_SUCCESS;
-            kill(0, SIGTERM);
+            //kill(0, SIGTERM);
             return 0;
         } 
         else if (ferror(stdin)) {
@@ -206,8 +209,8 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         return -1;
     }
     if (bytes_read == 0) {
-        kill(0, SIGTERM);
-        return -1;
+        //kill(0, SIGTERM);
+        //return -1;
     }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);
