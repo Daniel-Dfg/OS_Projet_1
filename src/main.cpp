@@ -2,6 +2,7 @@
 #include "chat_handler.hpp"
 
 #include <signal.h>
+#include <unistd.h>
 
 using namespace ChatGlobals;
 
@@ -32,10 +33,13 @@ int main(int argc, char* argv[]) {
         signal(SIGINT, SIG_IGN);
         ChatGlobals::g_chat_handler->access_reception_channel(*user2_name);
     }
-    // Il ne sont meme pas pris en compte
     delete ChatGlobals::g_chat_handler;
     delete user1_name;
     delete user2_name;
+    close(g_file_desc1);
+    close(g_file_desc2);
+    unlink(g_path_from_user1.c_str());
+    unlink(g_path_from_user2.c_str());
 
     return 0;
 }

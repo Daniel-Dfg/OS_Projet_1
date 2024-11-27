@@ -77,31 +77,31 @@ void ChatHandler::access_sending_channel(const string &recipient) {
 
     file_desc1 = open(path.c_str(), O_WRONLY);
     if (file_desc1 == -1) {
-        perror("open");
-        return; // Sortir de la fonction si l'ouverture a échoué
+        cerr << "Error opening file: " << strerror(errno) << endl;
+        exit(EXIT_FAILURE);
     }
     do {
-        if (file_desc1 != -1) { //peut-être inclure le file_desc2 dans la condition, pour voir si le chat est toujours actif ?
-            bytes_written = send_message(message_to_send);
-            if (bytes_written > 0 && !bot) {
-                printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
-            }
-            display_pending_messages();
-        } else {
-            cerr << "Descripteur de fichier invalide : impossible d'y écrire des informations" << endl;
-            bytes_written = -1;
+        bytes_written = send_message(message_to_send);
+        if (bytes_written > 0 && !bot) {
+            printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
         }
+        display_pending_messages();
     } while (bytes_written > 0);
+
     if (bytes_written < 0) {
         cerr << "Erreur en écriture dans le fichier: " << strerror(errno) << endl << this->error_log << endl;
+
     } else if (bytes_written == 0) {
         string end_user = (path == path_from_user1) ? user1_name : user2_name;
         this->error_log = "Conversation terminée par " + end_user;
         this->exit_code = EXIT_SUCCESS;
     }
-    close(ChatGlobals::g_file_desc1);
-    unlink(ChatGlobals::g_path_from_user1.c_str());
-    exit(this->exit_code);
+    // If not success then exit error
+    if (this->exit_code != EXIT_SUCCESS){
+        exit(this->exit_code);
+    }
+    //else finish normally
+
 }
 void ChatHandler::access_reception_channel(const string &sender) {
     string path = (sender == user2_name) ? path_from_user2 : path_from_user1;
@@ -135,19 +135,18 @@ void ChatHandler::access_reception_channel(const string &sender) {
         }
     } while (bytes_read > 0);
 
-    //Ce-ci est correct?
-    if (bytes_read != 0) {
-        this->error_log = "Problème de lecture !";
-        this->exit_code = EXIT_FAILURE;
-        cerr << "Problème de lecture !" << endl;
-    } else {
+
+    if (bytes_read == 0) {
         this->error_log = "";
         this->exit_code = EXIT_SUCCESS;
     }
+
+    // if not SUCCESS then exit error
+    if (this->exit_code != EXIT_SUCCESS){
+        exit(this->exit_code);
+    }
+    // else exit normally
     kill(getppid(), SIGTERM);
-    close(ChatGlobals::g_file_desc1);
-    unlink(ChatGlobals::g_path_from_user1.c_str());
-    exit(this->exit_code);
 }
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
@@ -180,9 +179,10 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         perror("read");
         return -1;
     }
-    if (bytes_read == 0) {
-        return -1;
-    }
+    // Ca non, ca va tjs donne une erreur d'ecriture si disscussion se termine
+    // if (bytes_read == 0) {
+    //     return -1;
+    // }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);
 }
@@ -209,15 +209,6 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     }
     return new (shared_memory_ptr) SharedMemoryQueue();
 }
-ChatHandler::~ChatHandler(){
-    // Removes the shared memory block
-    if (manuel && shared_memory_queue){
-        if (munmap(shared_memory_queue, SHARED_MEMORY_SIZE) == -1){
-            perror("munmap");
-        }
-    }
-    shared_memory_queue = nullptr;
-}
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     size_t message_size = formatted_message.size() + 1; // null terminator included
 
@@ -227,4 +218,13 @@ void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     }
     std::memcpy(&shared_memory_queue->messages[shared_memory_queue->total_chars], formatted_message.c_str(), message_size);
     shared_memory_queue->total_chars += message_size;
+}
+ChatHandler::~ChatHandler(){
+    // Removes the shared memory block
+    if (manuel && shared_memory_queue){
+        if (munmap(shared_memory_queue, SHARED_MEMORY_SIZE) == -1){
+            perror("munmap");
+        }
+    }
+    shared_memory_queue = nullptr;
 }
