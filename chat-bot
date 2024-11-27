@@ -40,7 +40,11 @@ function commands_responses(){
         echo $(ls)
     elif [[ "$1" == "li" && $args_number -eq 2 ]]; then
         if [[ -f $file_name && -n $file_name ]]; then
-            echo $(cat "$2") # TODO echo each line as a response
+            sed -i '$a\' "$file_name"
+            while IFS= read -r line; do
+                sleep 0.5
+                echo $line
+            done < $file_name
         else
             echo "WARNING: File doesn't exist"
         fi
@@ -59,13 +63,14 @@ function check_liste_bot(){
     not_found=true
 
     # Read eahc line of liste-bot.txt one by one
+    sed -i '$a\' "liste-bot.txt"
     while IFS= read -r line; do
         first_word="${line%% *}"
         if [[ "$first_word" == "$recipient_message" ]]; then
             echo "${line#* }" # rest of the line without first_word
             not_found=false
         fi
-    done <liste-bot.txt
+    done <"liste-bot.txt"
 
     if $not_found ; then
         echo "🤖 ?"
