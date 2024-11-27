@@ -36,10 +36,6 @@ int main(int argc, char* argv[]) {
     delete ChatGlobals::g_chat_handler;
     delete user1_name;
     delete user2_name;
-    close(g_file_desc1);
-    close(g_file_desc2);
-    unlink(g_path_from_user1.c_str());
-    unlink(g_path_from_user2.c_str());
 
     return 0;
 }

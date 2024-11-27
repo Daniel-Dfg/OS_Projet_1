@@ -22,9 +22,13 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     // Tout initialiser
     DIR *tmp = opendir("tmp");
     if (tmp) {
-        ExceptionHandler::return_code_check(closedir(tmp));
+        //NEED FIX
+        //ExceptionHandler::return_code_check(closedir(tmp));
+        closedir(tmp);
     } else {
-        ExceptionHandler::return_code_check(mkdir("tmp", FOLDER_PERMISSION));
+        //NEED FIX
+        //ExceptionHandler::return_code_check(mkdir("tmp", FOLDER_PERMISSION));
+        mkdir("tmp", FOLDER_PERMISSION);
     }
 
     // Initialize FIFO paths
@@ -44,10 +48,14 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     }
     // Create Named Pipes (FIFO)
     if (file_desc1 < 0) {
-        ExceptionHandler::return_code_check(mkfifo(path_from_user1.c_str(), FIFO_PERMISSION));
+        //NEED FIX
+        //ExceptionHandler::return_code_check(mkfifo(path_from_user1.c_str(), FIFO_PERMISSION));
+        mkfifo(path_from_user1.c_str(), FIFO_PERMISSION);
     }
     if (file_desc2 < 0) {
-        ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
+        //NEED FIX
+        //ExceptionHandler::return_code_check(mkfifo(path_from_user2.c_str(), FIFO_PERMISSION));
+        mkfifo(path_from_user2.c_str(), FIFO_PERMISSION);
     }
 }
 void Signal_Handler(const int sig){
@@ -227,4 +235,8 @@ ChatHandler::~ChatHandler(){
         }
     }
     shared_memory_queue = nullptr;
+    close(g_file_desc1);
+    close(g_file_desc2);
+    unlink(g_path_from_user1.c_str());
+    unlink(g_path_from_user2.c_str());
 }
