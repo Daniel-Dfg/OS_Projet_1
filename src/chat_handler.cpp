@@ -9,10 +9,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+/*
 namespace ChatGlobals {
     ChatHandler* g_chat_handler = nullptr;
 }
 using namespace ChatGlobals;
+*/
 
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
@@ -27,7 +29,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
         //ExceptionHandler::return_code_check(mkdir("tmp", FOLDER_PERMISSION));
         mkdir("tmp", FOLDER_PERMISSION);
     }
-
+    set_current_instance(this);
     // Initialize FIFO paths
     path_from_user1 = "tmp/" + user1_name + "_" + user2_name + ".chat";
     path_from_user2 = "tmp/" + user2_name + "_" + user1_name + ".chat";
@@ -54,8 +56,11 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 }
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
-        if (ChatGlobals::g_chat_handler->manuel){
-            ChatGlobals::g_chat_handler->display_pending_messages();
+        printf("\b\b\033[K");  // Move cursor back two places and clear the line
+        fflush(stdout); 
+        if (ChatHandler::current_instance->manuel){
+            fflush(stdout);
+            ChatHandler::current_instance->display_pending_messages();
         }
         else{
             std::cout << "You closed the chat. sigint pere" << std::endl;
@@ -153,26 +158,29 @@ void ChatHandler::access_reception_channel(const string &sender) {
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
     //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
-    char* input = fgets(message_to_send, sizeof(message_to_send), stdin);
-    if (input == NULL){
-        if (feof(stdin)) {
-            this->error_log = "EOF reached. You closed the chat.";
-            this->exit_code = EXIT_SUCCESS;
-            return 0;
+    do{
+        char* input = fgets(message_to_send, sizeof(message_to_send), stdin);
+        if (input == NULL){
+            if (feof(stdin)) {
+                this->error_log = "EOF reached. You closed the chat.";
+                this->exit_code = EXIT_SUCCESS;
+                return 0;
+            }
+            else if (ferror(stdin)) {
+                this->error_log = "Error reading input: ";
+                this->exit_code = EXIT_FAILURE;
+                return 0;
+            }
+            else{
+                return -1;
+            }
         }
-        else if (ferror(stdin)) {
-            this->error_log = "Error reading input: ";
-            this->exit_code = EXIT_FAILURE;
-            return 0;
-        }
-        else{
-            return -1;
-        }
-    }
-
+    } while (message_to_send[0] == '\n');
     ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
-
+    
     this-> exit_code ? bytes_written = -1 : bytes_written;
+    //std::cout << "Sent message: " << message_to_send << std::endl; // Debug statement
+    //std::cout.flush();
     return static_cast<int>(bytes_written);
 }
 int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
@@ -181,7 +189,17 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         perror("read");
         return -1;
     }
+    // Ca non, ca va tjs donne une erreur d'ecriture si disscussion se termine
+    // if (bytes_read == 0) {
+    //     return -1;
+    // }
+    if (bytes_read == 0) {
+        //std::cerr << "End of input reached.\n";
+        return 0;
+    }
     received_message[bytes_read] = '\0'; // Null-terminate the string
+    //std::cout << "Received message: " << received_message << std::endl; // Debug statement
+    //std::cout.flush();
     return static_cast<int>(bytes_read);
 }
 void ChatHandler::display_pending_messages() {
@@ -209,7 +227,7 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
         perror("mmap");
         exit(EXIT_FAILURE);
     }
-    return new (shared_memory_ptr) SharedMemoryQueue();
+    return new (shared_memory_ptr) SharedMemoryQueue;
 }
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     size_t message_size = formatted_message.size() + 1; // null terminator included
@@ -223,7 +241,7 @@ void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
 }
 ChatHandler::~ChatHandler(){
     // Removes the shared memory block
-    if (manuel && shared_memory_queue){
+    if (shared_memory_queue){
         if (munmap(shared_memory_queue, SHARED_MEMORY_SIZE) == -1){
             perror("munmap");
         }
