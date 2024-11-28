@@ -36,7 +36,6 @@ int main(int argc, char* argv[]) {
     } else { // Fils
         signal(SIGINT, SIG_IGN);
         chat_handler.access_reception_channel(user2_name);
-        kill(getppid(), SIGTERM);
     }
     return 0;
 }
