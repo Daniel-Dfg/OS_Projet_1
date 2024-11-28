@@ -1,6 +1,7 @@
 #include "chat_handler.hpp"
 #include "exception_handler.hpp"
 
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <fcntl.h>
@@ -36,6 +37,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
     file_desc2 = access(path_from_user2.c_str(), F_OK);
 
     if (manuel){
+        sleep(1);
         shared_memory_queue = init_shared_memory_block();
     }
     // Create Named Pipes (FIFO)
@@ -83,7 +85,9 @@ void ChatHandler::access_sending_channel(const string &recipient) {
         if (bytes_written > 0 && !bot) {
             printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), message_to_send);
         }
-        display_pending_messages();
+        if (bytes_written > 0 && manuel && !bot){
+            display_pending_messages();
+        }
     } while (bytes_written > 0);
 
     if (bytes_written < 0) {
@@ -177,16 +181,16 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
         perror("read");
         return -1;
     }
-    // Ca non, ca va tjs donne une erreur d'ecriture si disscussion se termine
-    // if (bytes_read == 0) {
-    //     return -1;
-    // }
     received_message[bytes_read] = '\0'; // Null-terminate the string
     return static_cast<int>(bytes_read);
 }
 void ChatHandler::display_pending_messages() {
     if(shared_memory_queue){
-        std::cout.write(shared_memory_queue->messages, shared_memory_queue->total_chars);
+        for (size_t i = 0; i < shared_memory_queue->total_chars; ++i){
+            if( shared_memory_queue->messages[i] != '\0'){
+                cout.put(shared_memory_queue->messages[i]);
+            }
+        }
         shared_memory_queue->total_chars = 0;
     }
 }
@@ -214,7 +218,7 @@ void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
         display_pending_messages();
         shared_memory_queue->total_chars = 0;
     }
-    std::memcpy(&shared_memory_queue->messages[shared_memory_queue->total_chars], formatted_message.c_str(), message_size);
+    memcpy(&shared_memory_queue->messages[shared_memory_queue->total_chars], formatted_message.c_str(), message_size);
     shared_memory_queue->total_chars += message_size;
 }
 ChatHandler::~ChatHandler(){
@@ -224,7 +228,6 @@ ChatHandler::~ChatHandler(){
             perror("munmap");
         }
     }
-    shared_memory_queue = nullptr;
     close(file_desc1);
     close(file_desc2);
     unlink(path_from_user1.c_str());
