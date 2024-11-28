@@ -27,8 +27,8 @@ int main(int argc, char* argv[]) {
 
     // Séparation en deux processus
     pid_t process = fork();
+    chat_handler.pid = process;
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
-
     if (process > 0) { // Père
         signal(SIGTERM, Signal_Handler);
         signal(SIGINT, Signal_Handler);

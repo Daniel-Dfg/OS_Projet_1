@@ -56,6 +56,8 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 }
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
+        // Ici, nous sommes dans le pere dans tous les cas
+        // SIGINT, est ignore dans le processus fils
         if (!ChatHandler::current_instance->pipe_open){
             // Pipes non ouverts
             exit(4);
@@ -64,11 +66,21 @@ void Signal_Handler(const int sig){
             ChatHandler::current_instance->display_pending_messages();
         }
         else{
+            // Envoyer SIGTERM à l'enfant pour le fermer proprement
+            kill(ChatHandler::current_instance->pid, SIGTERM);
+            // Attendre que le fils se termine
+            waitpid(ChatHandler::current_instance->pid, NULL, 0);
             close(STDIN_FILENO);
+            //exit(4)?
         }
     }
     if (sig == SIGTERM){
+        if(ChatHandler::current_instance->pid > 0){
+            kill(ChatHandler::current_instance->pid, SIGTERM);
+            waitpid(ChatHandler::current_instance->pid, NULL, 0);
+        }
         close(STDIN_FILENO);
+        //exit(4)?
     }
 }
 void ChatHandler::access_sending_channel(const string &recipient) {
@@ -81,7 +93,7 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     file_desc1 = open(path.c_str(), O_WRONLY);
     pipe_open = true;
     if (file_desc1 == -1) {
-        cerr << "Error opening file: " << strerror(errno) << endl;
+        cerr << "Erreur ouverture du fichier: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);
     }
     do {
@@ -169,9 +181,8 @@ int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
                 return -1;
             }
         }
-    } while(message_to_send[0] == '\n');
+    } while(message_to_send[0] == '\n'); // Gere l'envoie d'un message vide
     ssize_t bytes_written = write(file_desc1, message_to_send, strlen(message_to_send));
-
     this-> exit_code ? bytes_written = -1 : bytes_written;
     return static_cast<int>(bytes_written);
 }
