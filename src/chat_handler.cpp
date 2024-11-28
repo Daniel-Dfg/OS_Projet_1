@@ -56,10 +56,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 }
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
-        printf("\b\b\033[K");  // Move cursor back two places and clear the line
-        fflush(stdout); 
         if (ChatHandler::current_instance->manuel){
-            fflush(stdout);
             ChatHandler::current_instance->display_pending_messages();
         }
         else{
