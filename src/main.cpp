@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     // Communication avec deux processus (Original: envoi de messages, Secondaire: réception de messages)
 
     if (process > 0) { // Père
+        signal(SIGTERM, Signal_Handler);
         signal(SIGINT, Signal_Handler);
         chat_handler.access_sending_channel(user2_name);
 

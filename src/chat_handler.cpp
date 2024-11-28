@@ -61,8 +61,7 @@ void Signal_Handler(const int sig){
             ChatHandler::current_instance->display_pending_messages();
         }
         else{
-            std::cout << "You closed the chat. sigint pere" << std::endl;
-            exit(4);
+            close(STDIN_FILENO);
         }
     }
     if (sig == SIGTERM){
@@ -70,7 +69,6 @@ void Signal_Handler(const int sig){
     }
 }
 void ChatHandler::access_sending_channel(const string &recipient) {
-    signal(SIGTERM, Signal_Handler);
     string path = (recipient == user2_name) ? path_from_user1 : path_from_user2;
     string sender = (recipient == user2_name) ? user1_name : user2_name;
     char message_to_send[BUFFER_SIZE];
@@ -151,7 +149,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
         exit(this->exit_code);
     }
     // else exit normally
-    kill(getppid(), SIGTERM);
+
 }
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
     //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
@@ -239,4 +237,5 @@ ChatHandler::~ChatHandler(){
     close(file_desc2);
     unlink(path_from_user1.c_str());
     unlink(path_from_user2.c_str());
+    kill(getppid(), SIGTERM);
 }
