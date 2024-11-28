@@ -29,13 +29,12 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
         mkdir("tmp", FOLDER_PERMISSION);
     }
 
-    // Initialize FIFO paths
+    // Chemins FIFO
     path_from_user1 = "tmp/" + user1_name + "_" + user2_name + ".chat";
     path_from_user2 = "tmp/" + user2_name + "_" + user1_name + ".chat";
 
     set_current_instance(this);
 
-    // Initialize file descriptors
     file_desc1 = access(path_from_user1.c_str(), F_OK);
     file_desc2 = access(path_from_user2.c_str(), F_OK);
 
@@ -43,7 +42,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
         sleep(1);
         shared_memory_queue = init_shared_memory_block();
     }
-    // Create Named Pipes (FIFO)
+    // Créer FIFOs
     if (file_desc1 < 0) {
         //NEED FIX
         //ExceptionHandler::return_code_check(mkfifo(path_from_user1.c_str(), FIFO_PERMISSION));
@@ -58,7 +57,7 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
         if (!ChatHandler::current_instance->pipe_open){
-            // Pipes are not opened
+            // Pipes non ouverts
             exit(4);
         }
         else if (ChatHandler::current_instance->manuel){
@@ -103,11 +102,10 @@ void ChatHandler::access_sending_channel(const string &recipient) {
         this->error_log = "Conversation terminée par " + end_user;
         this->exit_code = EXIT_SUCCESS;
     }
-    // If not success then exit error
     if (this->exit_code != EXIT_SUCCESS){
         exit(this->exit_code);
     }
-    //else finish normally
+    //else : terminer normalement
 
 }
 void ChatHandler::access_reception_channel(const string &sender) {
@@ -134,7 +132,7 @@ void ChatHandler::access_reception_channel(const string &sender) {
                 string formatted_message = "[" + ansi_beginning + sender + ansi_end + "] " + received_message;
                 add_message_to_shared_memory(formatted_message);
                 pending_bytes += bytes_read;
-                std::cout<< "\a" << std::flush;
+                std::cout<< "\a" << std::flush; // bip sonore
             } else {
                 printf("[%s%s%s] %s", ansi_beginning.c_str(), sender.c_str(), ansi_end.c_str(), received_message);
                 fflush(stdout);
@@ -147,17 +145,13 @@ void ChatHandler::access_reception_channel(const string &sender) {
         this->error_log = "";
         this->exit_code = EXIT_SUCCESS;
     }
-
-    // if not SUCCESS then exit error
     if (this->exit_code != EXIT_SUCCESS){
         exit(this->exit_code);
     }
-    // else exit normally
+    // else : terminer normalement
 
 }
 int ChatHandler::send_message(char (&message_to_send)[BUFFER_SIZE]){
-    //TODO : définir la taille exacte du message, et écrire cette quantité précisément :
-    //de même, le receveur du message doit pouvoir déterminer combien de bytes il doit lire...
     do{
         char* input = fgets(message_to_send, sizeof(message_to_send), stdin);
         if (input == NULL){
@@ -190,7 +184,7 @@ int ChatHandler::receive_message(char (&received_message)[BUFFER_SIZE]) {
     else if (bytes_read == 0){
         return 0;
     }
-    received_message[bytes_read] = '\0'; // Null-terminate the string
+    received_message[bytes_read] = '\0'; // Null-terminate le string
     return static_cast<int>(bytes_read);
 }
 void ChatHandler::display_pending_messages() {
@@ -204,10 +198,9 @@ void ChatHandler::display_pending_messages() {
     }
 }
 SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
-    // Autoriser les lectures et ecritures
-    const int protection = PROT_READ | PROT_WRITE;
-    // Partager avec son/ses enfants
-    const int visibility = MAP_SHARED | MAP_ANONYMOUS;
+    const int protection = PROT_READ | PROT_WRITE; // Autoriser les read/write
+    const int visibility = MAP_SHARED | MAP_ANONYMOUS; // Partager avec son/ses enfants
+
     // Le fichier pas utilise
     const int fd = -1;
     const int offset = 0;
@@ -221,7 +214,7 @@ SharedMemoryQueue* ChatHandler::init_shared_memory_block(){
     return new (shared_memory_ptr) SharedMemoryQueue;
 }
 void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
-    size_t message_size = formatted_message.size() + 1; // null terminator included
+    size_t message_size = formatted_message.size() + 1; // incl. null-terminator
 
     if (shared_memory_queue->total_chars + message_size > SHARED_MEMORY_SIZE){
         display_pending_messages();
@@ -231,9 +224,8 @@ void ChatHandler::add_message_to_shared_memory(const string& formatted_message){
     shared_memory_queue->total_chars += message_size;
 }
 ChatHandler::~ChatHandler(){
-    // Removes the shared memory block
     if (shared_memory_queue){
-        if (munmap(shared_memory_queue, SHARED_MEMORY_SIZE) == -1){
+        if (munmap(shared_memory_queue, SHARED_MEMORY_SIZE) == -1){// Suppression du bloc de mémoire partagé
             perror("munmap");
         }
     }

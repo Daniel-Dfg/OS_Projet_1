@@ -16,6 +16,10 @@ using std::string, std::unordered_map, std::unordered_set, std::vector, std::cer
 
 
 class ExceptionHandler {
+    /*
+   Gère les erreurs possibles du programme (arguments invalides, valeurs de retour...)
+   */
+
     enum ExitCodes {
         VALID = 0,
         LACKING_USERNAME = 1,
@@ -23,12 +27,12 @@ class ExceptionHandler {
         INVALID_USERNAME = 3, //Si l'utilisateur s'appelle '.', '..', etc ou que les deux noms sont les mêmes
     };
 
-    //On va probablement devoir raffiner ces exceptions, en disant par exemple lequel des deux usernames présentés est fautif.
     static const unordered_map<ExitCodes, string> EXIT_CODE_MESSAGES;
 
     static void check_username_validity(vector<string> &usernames);
     static void display_error_and_exit(const ExitCodes &exit_code);
     static void display_warning(string &&warning_message);
+
     public:
     static void process_args(const int argc, char* argv[], bool &bot, bool &manuel);
     static void return_code_check(int error);

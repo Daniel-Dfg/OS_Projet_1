@@ -5,14 +5,6 @@
 */
 #ifndef CHAT_HANDLER_HPP
 #define CHAT_HANDLER_HPP
-/*
-
-La classe chat est censée :
-- Gérer la création du chat (créer et gérer les folders et les pipes)
-- Assurer la communication et la terminaison des chats
-
-Les signaux qui en découlent sont gérés dans une fonction à adapter TODO
-*/
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -32,6 +24,12 @@ struct SharedMemoryQueue{
 };
 
 class ChatHandler{
+    /*
+   En charge de gérer les canaux de conversation entre utilisateurs :
+    - Gestion des canaux de communication (pipes nommés)
+    - Transmission des messages d'un utilisateur à un autre
+    */
+
     private:
     //std::queue<string>* pending_messages = nullptr;
     size_t pending_bytes = 0;
@@ -73,6 +71,6 @@ class ChatHandler{
 
 
 void Signal_Handler(const int sig);
-extern ChatHandler* g_chat_handler; // I was kinda obligated to do this..
+extern ChatHandler* g_chat_handler;
 
 #endif // CHAT_HANDLER_HPP

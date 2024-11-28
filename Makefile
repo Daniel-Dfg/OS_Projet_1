@@ -9,16 +9,12 @@ OBJDIR  := $(TOPDIR)obj/
 BINDIR  := $(TOPDIR)
 NAME    := chat
 EXE     := $(BINDIR)$(NAME)
-#Added
 TMP := $(TOPDIR)tmp/
 
 SFILES  := cpp
 OFILES  := o
-# Added
 CC      := g++
-#Added
-CFLAGS  := -std=gnu++17 -Wall -Wextra -O2 -Wpedantic -pedantic -march=native -Wnull-dereference -Winline -Wconversion -g -fsanitize=address,undefined
-LIBS    := -fsanitize=address,undefined
+FLAGS  := -std=gnu++17 -Wall -Wextra -O2 -Wpedantic
 
 SOURCES := $(shell find $(SRCDIR) -name "*.$(SFILES)")
 OBJECTS := $(patsubst $(SRCDIR)%.$(SFILES), $(OBJDIR)%.$(OFILES), $(SOURCES))
@@ -31,11 +27,13 @@ ALLFILES := $(SOURCES)
 all: $(EXE)
 
 $(EXE): $(OBJECTS)
-	$(CC) $^ -o $@ $(LIBS)
+	$(CC) $^ -o $@
 
-$(OBJDIR)%$(OFILES): $(SRCDIR)%$(SFILES)
+$(OBJDIR):
 	@mkdir -p $(OBJDIR)
-	$(CC) $(CFLAGS) $< -c -o $@
+
+$(OBJDIR)%.$(OFILES): $(SRCDIR)%.$(SFILES) | $(OBJDIR)
+	$(CC) $(FLAGS) $< -c -o $@
 
 clean:
 	@rm -rf $(OBJECTS) $(EXE) $(TMP)

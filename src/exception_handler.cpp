@@ -4,6 +4,7 @@
  * Daniel          Defoing        ddef0003        000589910
 */
 #include "exception_handler.hpp"
+
 const unordered_map<ExceptionHandler::ExitCodes, string> ExceptionHandler::EXIT_CODE_MESSAGES = {
     {LACKING_USERNAME, "chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"},
     {USERNAME_TOO_LONG, "Un nom d'utilisateur est trop long (> 30 )"},
@@ -11,7 +12,7 @@ const unordered_map<ExceptionHandler::ExitCodes, string> ExceptionHandler::EXIT_
     //etc...
 };
 
-void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){ //devrait prendre args en paramètre pour les pseudos avec caractères invalides
+void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){
     auto it = EXIT_CODE_MESSAGES.find(exit_code);
 
     if(it == EXIT_CODE_MESSAGES.end()){
@@ -24,7 +25,7 @@ void ExceptionHandler::display_error_and_exit(const ExitCodes &exit_code){ //dev
 };
 
 void ExceptionHandler::display_warning(string &&warning_message){
-    cout << "WARNING : " << warning_message << endl;
+    cout << "AVERTISSEMENT : " << warning_message << endl;
     }
 
 void ExceptionHandler::check_username_validity(vector<string> &usernames){
@@ -54,10 +55,9 @@ void ExceptionHandler::check_username_validity(vector<string> &usernames){
     }
 }
 
-void ExceptionHandler::return_code_check(int error) { // TODO a changé
-    // Error si "error" est -1
+void ExceptionHandler::return_code_check(int error) {
     if (error < 0) {
-        std::cout << "error\n";
+        cout << "error found, code : " << error << endl;
         exit(error);
     }
 }
@@ -66,7 +66,7 @@ void ExceptionHandler::process_args(const int argc, char* argv[], bool &bot, boo
     if (argc < 3) {
         display_error_and_exit(LACKING_USERNAME);
     }
-    std::vector<std::string> usernames = {argv[1], argv[2]};
+    vector<string> usernames = {argv[1], argv[2]};
     check_username_validity(usernames);
 
     if (argc > 5) {
@@ -74,7 +74,7 @@ void ExceptionHandler::process_args(const int argc, char* argv[], bool &bot, boo
     }
 
     for (int i = 3; i < argc; i++) {
-        std::string arg = argv[i];
+        string arg = argv[i];
         if (arg == "--bot" || arg == "--manuel") {
             if ((bot && arg == "--bot") || (manuel && arg == "--manuel")) {
                 display_warning("Un même argument a été écrit deux fois (" + arg + ")");
