@@ -7,9 +7,6 @@ EXE     := $(BINDIR)$(NAME)
 #Added
 TMP := $(TOPDIR)tmp/
 
-# Added
-$(shell if [ ! -d "obj" ]; then mkdir "obj" ; fi )
-
 SFILES  := cpp
 OFILES  := o
 # Added
@@ -32,6 +29,7 @@ $(EXE): $(OBJECTS)
 	$(CC) $^ -o $@ $(LIBS)
 
 $(OBJDIR)%$(OFILES): $(SRCDIR)%$(SFILES)
+	@mkdir -p $(OBJDIR)
 	$(CC) $(CFLAGS) $< -c -o $@
 
 clean:
