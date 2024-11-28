@@ -244,5 +244,5 @@ ChatHandler::~ChatHandler(){
     close(file_desc2);
     unlink(path_from_user1.c_str());
     unlink(path_from_user2.c_str());
-    kill(getppid(), SIGTERM);
+    sleep(1);
 }
