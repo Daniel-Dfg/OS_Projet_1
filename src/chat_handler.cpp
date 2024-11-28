@@ -61,7 +61,7 @@ void Signal_Handler(const int sig){
         }
     }
     if (sig == SIGTERM){
-        exit(0);
+        close(STDIN_FILENO);
     }
 }
 void ChatHandler::access_sending_channel(const string &recipient) {
