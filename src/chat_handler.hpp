@@ -50,7 +50,6 @@ class ChatHandler{
     public:
     const bool bot, manuel;
     bool pipe_open;
-    pid_t pid;
     SharedMemoryQueue* shared_memory_queue = nullptr;
     SharedMemoryQueue* init_shared_memory_block();
     static ChatHandler* current_instance;
