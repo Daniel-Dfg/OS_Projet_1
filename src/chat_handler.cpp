@@ -57,7 +57,11 @@ ChatHandler::ChatHandler(const string &username1_, const string &username2_, con
 }
 void Signal_Handler(const int sig){
     if (sig == SIGINT){
-        if (ChatHandler::current_instance->manuel){
+        if (!ChatHandler::current_instance->pipe_open){
+            // Pipes are not opened
+            exit(4);
+        }
+        else if (ChatHandler::current_instance->manuel){
             ChatHandler::current_instance->display_pending_messages();
         }
         else{
@@ -75,8 +79,8 @@ void ChatHandler::access_sending_channel(const string &recipient) {
     int bytes_written;
     string ansi_beginning = bot ? "" : "\x1B[4m";
     string ansi_end = bot ? "" : "\x1B[0m";
-
     file_desc1 = open(path.c_str(), O_WRONLY);
+    pipe_open = true;
     if (file_desc1 == -1) {
         cerr << "Error opening file: " << strerror(errno) << endl;
         exit(EXIT_FAILURE);

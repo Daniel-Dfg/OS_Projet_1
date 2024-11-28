@@ -6,6 +6,7 @@
 #include "exception_handler.hpp"
 #include "chat_handler.hpp"
 
+#include <cstdio>
 #include <signal.h>
 #include <unistd.h>
 
@@ -32,7 +33,6 @@ int main(int argc, char* argv[]) {
         signal(SIGTERM, Signal_Handler);
         signal(SIGINT, Signal_Handler);
         chat_handler.access_sending_channel(user2_name);
-
     } else { // Fils
         signal(SIGINT, SIG_IGN);
         chat_handler.access_reception_channel(user2_name);
