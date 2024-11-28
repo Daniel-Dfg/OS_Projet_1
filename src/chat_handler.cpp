@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
-
+#include <sys/wait.h>
 
 ChatHandler::ChatHandler(const string &username1_, const string &username2_, const bool &bot_, const bool &manuel_)
     : user1_name{username1_}, user2_name{username2_}, bot{bot_}, manuel{manuel_} {
