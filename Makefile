@@ -6,8 +6,6 @@ NAME    := chat
 EXE     := $(BINDIR)$(NAME)
 #Added
 TMP := $(TOPDIR)tmp/
-# Added
-$(shell if [ ! -d "obj" ]; then mkdir "obj" ; fi )
 
 SFILES  := cpp
 OFILES  := o
