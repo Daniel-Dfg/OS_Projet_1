@@ -1,3 +1,8 @@
+/* Name            Prénom         ULBID           Matricule
+ * El Hussein      Abdalrahman    aelh0063        000596003
+ * Ibrahim         Dogan          idog0003        000586544
+ * Daniel          Defoing        ddef0003        000589910
+*/
 #include "exception_handler.hpp"
 const unordered_map<ExceptionHandler::ExitCodes, string> ExceptionHandler::EXIT_CODE_MESSAGES = {
     {LACKING_USERNAME, "chat pseudo_utilisateur pseudo_destinataire [--bot] [--manuel]"},

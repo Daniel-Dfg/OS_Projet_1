@@ -1,3 +1,8 @@
+/* Name            Prénom         ULBID           Matricule
+ * El Hussein      Abdalrahman    aelh0063        000596003
+ * Ibrahim         Dogan          idog0003        000586544
+ * Daniel          Defoing        ddef0003        000589910
+*/
 #ifndef EXCEPTION_HANDLER_HPP
 #define EXCEPTION_HANDLER_HPP
 
